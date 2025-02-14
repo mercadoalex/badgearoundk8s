@@ -4,6 +4,9 @@ import fs from 'fs';
 import path from 'path';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
+// Load the KeyCode Catalog
+const keyCodeCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, '../../assets/keyCodeCatalog.json'), 'utf-8'));
+
 // Register the custom font and fallback font
 try {
     registerFont(path.join(__dirname, '../../assets/fonts/Arial.ttf'), { family: 'Arial' });
@@ -20,6 +23,11 @@ try {
 
 const s3 = new S3Client({ region: 'us-west-2' });
 
+/**
+ * Generates a badge with the provided details and uploads it to S3.
+ * @param badgeDetails - The details of the badge to be generated.
+ * @returns The URL of the uploaded badge.
+ */
 export async function generateBadge(badgeDetails: Badge): Promise<string> {
     const { name, issuer, uniqueKey } = badgeDetails;
 
@@ -27,21 +35,32 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         // Load the base image
         const baseImage = await loadImage(path.join(__dirname, '../../assets/badge.png'));
         const width = baseImage.width;
-        const height = baseImage.height + 200; // Increased height to accommodate additional text
+        const height = baseImage.height + 100; // Increased height to accommodate additional text
 
+        // Create a canvas with the dimensions of the base image
         const canvas = createCanvas(width, height);
         const context = canvas.getContext('2d');
 
-        context.drawImage(baseImage, 0, 0, width, baseImage.height); // Draw the base image at its original size
+        // Draw the base image on the canvas
+        context.drawImage(baseImage, 0, 0, width, baseImage.height);
 
-        // Personalize the badge
+        // Set the fill color for the text
         context.fillStyle = '#333';
-        context.font = 'bold 24px Arial, OpenSans'; // Use Arial with fallback to OpenSans
-        context.fillText(name, 50, baseImage.height + 50); // Draw the name below the image
 
-        context.font = '18px Arial, OpenSans'; // Use Arial with fallback to OpenSans
-        context.fillText(`Issued by: ${issuer}`, 50, baseImage.height + 100); // Draw the issuer below the name
-        context.fillText(`Key: ${uniqueKey}`, 50, baseImage.height + 150); // Draw the unique key below the issuer
+        // Draw the name below the image
+        context.font = 'bold 14px Arial, OpenSans'; // Use Arial with fallback to OpenSans
+        context.fillText(name, 10, baseImage.height + 0);
+
+        // Draw the issuer below the name
+        context.font = '8px Arial, OpenSans'; // Use Arial with fallback to OpenSans
+        context.fillText(`Issued by: ${issuer}`, 10, baseImage.height + 50);
+
+        // Get the description from the catalog or use the uniqueKey if not found
+        const keyDescription = keyCodeCatalog[uniqueKey] || uniqueKey;
+
+        // Draw the unique key or its description below the issuer
+        context.font = '12px Arial, OpenSans'; // Use Arial with fallback to OpenSans
+        context.fillText(`Key: ${keyDescription}`, 10, baseImage.height + 75);
 
         // Ensure the output directory exists
         const outputDir = path.join(__dirname, '../../output');
@@ -64,6 +83,7 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         };
         await s3.send(new PutObjectCommand(uploadParams));
 
+        // Return the URL of the uploaded badge
         return `https://digital-badge-bucket.s3.amazonaws.com/${fileName}`;
     } catch (error) {
         console.error('Error generating badge:', error);
