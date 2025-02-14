@@ -7,9 +7,15 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 // Register the custom font and fallback font
 try {
     registerFont(path.join(__dirname, '../../assets/fonts/Arial.ttf'), { family: 'Arial' });
+    console.log('Arial font registered successfully.');
 } catch (error) {
-    console.error('Arial font not found, using fallback font.');
-    registerFont(path.join(__dirname, '../../assets/fonts/OpenSans-Regular.ttf'), { family: 'OpenSans' });
+    console.error('Error registering Arial font:', error);
+    try {
+        registerFont(path.join(__dirname, '../../assets/fonts/OpenSans-Regular.ttf'), { family: 'OpenSans' });
+        console.log('OpenSans font registered successfully.');
+    } catch (fallbackError) {
+        console.error('Error registering fallback font:', fallbackError);
+    }
 }
 
 const s3 = new S3Client({ region: 'us-west-2' });
