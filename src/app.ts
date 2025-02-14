@@ -35,6 +35,25 @@ app.post('/share-badge', async (req, res) => {
     }
 });
 
+// Route to serve an HTML page
+app.get('/', (req, res) => {
+    res.send(`
+        <html>
+            <head>
+                <title>Badge Service</title>
+            </head>
+            <body>
+                <h1>Badge Service</h1>
+                <p>Server is running on http://${SERVER_IP}:${PORT}</p>
+                <ul>
+                    <li><a href="http://${SERVER_IP}:${PORT}/generate-badge">Generate Badge</a></li>
+                    <li><a href="http://${SERVER_IP}:${PORT}/share-badge">Share Badge on LinkedIn</a></li>
+                </ul>
+            </body>
+        </html>
+    `);
+});
+
 // Starting the server and listening on the specified port
 app.listen(PORT, () => {
     console.log(`Server is running on http://${SERVER_IP}:${PORT}`);
