@@ -9,24 +9,25 @@ const s3 = new S3Client({ region: 'us-west-2' });
 export async function generateBadge(badgeDetails: Badge): Promise<string> {
     const { name, issuer, uniqueKey } = badgeDetails;
 
-    const width = 600;
-    const height = 400; // Increased height to accommodate additional text
-    const canvas = createCanvas(width, height);
-    const context = canvas.getContext('2d');
-
     try {
         // Load the base image
         const baseImage = await loadImage(path.join(__dirname, '../../assets/badge.png'));
-        context.drawImage(baseImage, 0, 0, width, 200); // Draw the base image at the top
+        const width = baseImage.width;
+        const height = baseImage.height + 200; // Increased height to accommodate additional text
+
+        const canvas = createCanvas(width, height);
+        const context = canvas.getContext('2d');
+
+        context.drawImage(baseImage, 0, 0, width, baseImage.height); // Draw the base image at its original size
 
         // Personalize the badge
         context.fillStyle = '#333';
         context.font = 'bold 24px Arial';
-        context.fillText(name, 50, 250); // Draw the name below the image
+        context.fillText(name, 50, baseImage.height + 50); // Draw the name below the image
 
         context.font = '18px Arial';
-        context.fillText(`Issued by: ${issuer}`, 50, 300); // Draw the issuer below the name
-        context.fillText(`Key: ${uniqueKey}`, 50, 350); // Draw the unique key below the issuer
+        context.fillText(`Issued by: ${issuer}`, 50, baseImage.height + 100); // Draw the issuer below the name
+        context.fillText(`Key: ${uniqueKey}`, 50, baseImage.height + 150); // Draw the unique key below the issuer
 
         // Ensure the output directory exists
         const outputDir = path.join(__dirname, '../../output');
