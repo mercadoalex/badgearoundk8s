@@ -1,6 +1,7 @@
 import express from 'express';
 import { generateBadge } from './badge/generateBadge';
 import { integrateLinkedIn } from './linkedin/integrateLinkedIn';
+import { Badge } from './types';
 
 /* The code imports the express module for creating the server and two functions, 
 generateBadge and integrateLinkedIn, from other modules. */
@@ -12,15 +13,23 @@ const SERVER_IP = process.env.SERVER_IP || 'localhost'; // Setting the server IP
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // Middleware to parse URL-encoded bodies
 
 // Route to generate a digital badge
 app.post('/generate-badge', async (req, res) => {
-    const { badgeDetails } = req.body; // Extracting badge details from the request body
+    const { firstName, lastName, keyCode } = req.body; // Extracting form data from the request body
+    const issuer = `KMMX-${Date.now()}`; // Generating the issuer value with a timestamp and 'KMMX-' prefix
+    const badgeDetails: Badge = {
+        name: `${firstName} ${lastName}`,
+        issuer,
+        uniqueKey: keyCode
+    };
+
     try {
         const badgeUrl = await generateBadge(badgeDetails); // Generating the badge using the generateBadge function
-        res.status(200).json({ badgeUrl }); // Sending the URL of the generated badge as the response
+        res.send(`Badge generated successfully: <a href="${badgeUrl}">View Badge</a>`); // Sending the URL of the generated badge as the response
     } catch (error) {
-        res.status(500).json({ error: 'Failed to generate badge' }); // Sending an error response if badge generation fails
+        res.status(500).send('Error generating badge'); // Sending an error response if badge generation fails
     }
 });
 
@@ -35,8 +44,9 @@ app.post('/share-badge', async (req, res) => {
     }
 });
 
-// Route to serve an HTML page
+// Route to serve an HTML page with a form
 app.get('/', (req, res) => {
+    const issuer = `KMMX-${Date.now()}`; // Generating the issuer value with a timestamp and 'KMMX-' prefix
     res.send(`
         <html>
             <head>
@@ -46,9 +56,19 @@ app.get('/', (req, res) => {
                 <h1>Badge Service</h1>
                 <p>Server is running on http://${SERVER_IP}:${PORT}</p>
                 <ul>
-                    <li><a href="http://${SERVER_IP}:${PORT}/generate-badge">Generate Badge</a></li>
                     <li><a href="http://${SERVER_IP}:${PORT}/share-badge">Share Badge on LinkedIn</a></li>
                 </ul>
+                <h2>Generate the Badge that you deserve! </h2>
+                <form action="/generate-badge" method="post">
+                    <label for="firstName">First Name:</label>
+                    <input type="text" id="firstName" name="firstName" required><br>
+                    <label for="lastName">Last Name:</label>
+                    <input type="text" id="lastName" name="lastName" required><br>
+                    <input type="hidden" id="issuer" name="issuer" value="${issuer}"><br>
+                    <label for="keyCode">Key Code:</label>
+                    <input type="text" id="keyCode" name="keyCode" required><br>
+                    <button type="submit">Generate Badge</button>
+                </form>
             </body>
         </html>
     `);
