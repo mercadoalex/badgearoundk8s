@@ -27,7 +27,19 @@ app.post('/generate-badge', async (req, res) => {
 
     try {
         const badgeUrl = await generateBadge(badgeDetails); // Generating the badge using the generateBadge function
-        res.send(`Badge generated successfully: <a href="${badgeUrl}">View Badge</a>`); // Sending the URL of the generated badge as the response
+        res.send(`
+            <html>
+                <head>
+                    <title>Badge Generated</title>
+                </head>
+                <body>
+                    <h1>Badge Generated Successfully</h1>
+                    <p>Here is your badge:</p>
+                    <img src="${badgeUrl}" alt="Generated Badge">
+                    <p><a href="/">Go back</a></p>
+                </body>
+            </html>
+        `); // Sending the URL of the generated badge as the response
     } catch (error) {
         res.status(500).send('Error generating badge'); // Sending an error response if badge generation fails
     }
@@ -53,12 +65,11 @@ app.get('/', (req, res) => {
                 <title>Badge Service</title>
             </head>
             <body>
-                <h1>Badge Service</h1>
-                <p>Server is running on http://${SERVER_IP}:${PORT}</p>
+                <h1>Digital Badge Creation Service</h1>
                 <ul>
                     <li><a href="http://${SERVER_IP}:${PORT}/share-badge">Share Badge on LinkedIn</a></li>
                 </ul>
-                <h2>Generate the Badge that you deserve! </h2>
+                <h2>Generate a Badge</h2>
                 <form action="/generate-badge" method="post">
                     <label for="firstName">First Name:</label>
                     <input type="text" id="firstName" name="firstName" required><br>
