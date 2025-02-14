@@ -71,9 +71,6 @@ app.get('/', (req, res) => {
             </head>
             <body>
                 <h1>Digital Badge Creation Service</h1>
-                <ul>
-                    <li><a href="http://${SERVER_IP}:${PORT}/share-badge">Share Badge on LinkedIn</a></li>
-                </ul>
                 <h2>Generate a Badge</h2>
                 <form action="/generate-badge" method="post">
                     <label for="firstName">First Name:</label>

@@ -1,8 +1,16 @@
-import { createCanvas, loadImage } from 'canvas';
+import { createCanvas, loadImage, registerFont } from 'canvas';
 import { Badge } from '../types';
 import fs from 'fs';
 import path from 'path';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+
+// Register the custom font and fallback font
+try {
+    registerFont(path.join(__dirname, '../../assets/fonts/Arial.ttf'), { family: 'Arial' });
+} catch (error) {
+    console.error('Arial font not found, using fallback font.');
+    registerFont(path.join(__dirname, '../../assets/fonts/OpenSans-Regular.ttf'), { family: 'OpenSans' });
+}
 
 const s3 = new S3Client({ region: 'us-west-2' });
 
@@ -22,10 +30,10 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
 
         // Personalize the badge
         context.fillStyle = '#333';
-        context.font = 'bold 24px Arial';
+        context.font = 'bold 24px Arial, OpenSans'; // Use Arial with fallback to OpenSans
         context.fillText(name, 50, baseImage.height + 50); // Draw the name below the image
 
-        context.font = '18px Arial';
+        context.font = '18px Arial, OpenSans'; // Use Arial with fallback to OpenSans
         context.fillText(`Issued by: ${issuer}`, 50, baseImage.height + 100); // Draw the issuer below the name
         context.fillText(`Key: ${uniqueKey}`, 50, baseImage.height + 150); // Draw the unique key below the issuer
 
