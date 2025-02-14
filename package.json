@@ -1,0 +1,25 @@
+{
+  "name": "digital-badge-project",
+  "version": "1.0.0",
+  "description": "A project to generate digital badges adhering to the Open Badge specification with LinkedIn integration.",
+  "main": "src/app.ts",
+  "scripts": {
+    "start": "ts-node src/app.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "canvas": "^2.8.0",
+    "express": "^4.17.1",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "nodemon": "^2.0.12",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.9.5"
+  },
+  "author": "Your Name",
+  "license": "MIT",
+  "keywords": []
+}

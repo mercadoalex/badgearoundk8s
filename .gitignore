@@ -1,0 +1,31 @@
+# Terraform 
+terraform/
+.terraform
+terraform.tfstate
+
+# Node.js
+node_modules/
+dist/
+build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# IDEs and editors
+.vscode/
+.idea/
+.DS_Store
+
+# Environment variables
+.env
+
+# Miscellaneous
+*.swp
+*.swo
