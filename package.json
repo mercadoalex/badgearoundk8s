@@ -8,11 +8,11 @@
     "build": "tsc"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.744.0",
     "axios": "^1.7.9",
     "canvas": "^2.8.0",
     "express": "^4.17.1",
-    "jsonwebtoken": "^9.0.2",
-    "@aws-sdk/client-s3": "^3.0.0" 
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
@@ -22,5 +22,9 @@
   },
   "author": "Alex Market",
   "license": "MIT",
-  "keywords": ["digital-badge", "open-badge", "linkedin"]
+  "keywords": [
+    "digital-badge",
+    "open-badge",
+    "linkedin"
+  ]
 }

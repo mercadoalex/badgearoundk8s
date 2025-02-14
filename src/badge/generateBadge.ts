@@ -2,9 +2,9 @@ import { createCanvas, loadImage } from 'canvas';
 import { Badge } from '../types';
 import fs from 'fs';
 import path from 'path';
-import AWS from 'aws-sdk';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-const s3 = new AWS.S3();
+const s3 = new S3Client({ region: 'us-west-2' });
 
 export async function generateBadge(badgeDetails: Badge): Promise<string> {
     const { name, issuer, uniqueKey } = badgeDetails;
@@ -26,28 +26,21 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
 
         context.font = '18px Arial';
         context.fillText(`Issued by: ${issuer}`, 50, 300); // Draw the issuer below the name
-
-        context.font = '16px Arial';
-        context.fillText(`Unique Key: ${uniqueKey}`, 50, 350); // Draw the unique key below the issuer
-
-        context.font = '16px Arial';
-        context.fillText(`Date: ${new Date().toLocaleDateString()}`, 50, 380); // Draw the date below the unique key
+        context.fillText(`Key: ${uniqueKey}`, 50, 350); // Draw the unique key below the issuer
 
         // Save the badge as a PNG file
         const buffer = canvas.toBuffer('image/png');
-        const filePath = path.join(__dirname, '../../badges', `${uniqueKey}.png`);
+        const filePath = path.join(__dirname, `../../output/${uniqueKey}.png`);
         fs.writeFileSync(filePath, buffer);
 
         // Upload the badge to S3
-        const s3Params = {
+        const uploadParams = {
             Bucket: 'digital-badge-bucket',
             Key: `${uniqueKey}.png`,
             Body: buffer,
-            ContentType: 'image/png',
-            ACL: 'public-read'
+            ContentType: 'image/png'
         };
-
-        await s3.upload(s3Params).promise();
+        await s3.send(new PutObjectCommand(uploadParams));
 
         return `https://digital-badge-bucket.s3.amazonaws.com/${uniqueKey}.png`;
     } catch (error) {
