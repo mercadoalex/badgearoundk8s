@@ -35,7 +35,7 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         // Load the base image
         const baseImage = await loadImage(path.join(__dirname, '../../assets/badge.png'));
         const width = baseImage.width;
-        const height = baseImage.height + 100; // Increased height to accommodate additional text
+        const height = baseImage.height + 50; // Increased height to accommodate additional text
 
         // Create a canvas with the dimensions of the base image
         const canvas = createCanvas(width, height);
@@ -53,14 +53,17 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
 
         // Draw the issuer below the name
         context.font = '8px Arial, OpenSans'; // Use Arial with fallback to OpenSans
-        context.fillText(`Issued by: ${issuer}`, 10, baseImage.height + 50);
+        context.fillText(`Issued by: ${issuer}`, 10, baseImage.height + 10);
 
         // Get the description from the catalog or use the uniqueKey if not found
         const keyDescription = keyCodeCatalog[uniqueKey] || uniqueKey;
 
         // Draw the unique key or its description below the issuer
         context.font = '12px Arial, OpenSans'; // Use Arial with fallback to OpenSans
-        context.fillText(`Key: ${keyDescription}`, 10, baseImage.height + 75);
+        const lines = [`Successfully completed the training:`, keyDescription];
+        lines.forEach((line, index) => {
+            context.fillText(line, 10, baseImage.height + 25 + (index * 15));
+        });
 
         // Ensure the output directory exists
         const outputDir = path.join(__dirname, '../../output');
