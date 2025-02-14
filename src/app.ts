@@ -41,6 +41,7 @@ app.post('/generate-badge', async (req, res) => {
             </html>
         `); // Sending the URL of the generated badge as the response
     } catch (error) {
+        console.error('Error generating badge:', error);
         res.status(500).send('Error generating badge'); // Sending an error response if badge generation fails
     }
 });
@@ -52,6 +53,7 @@ app.post('/share-badge', async (req, res) => {
         const response = await integrateLinkedIn(badgeId, userToken); // Integrating with LinkedIn using the integrateLinkedIn function
         res.status(200).json(response); // Sending the response from LinkedIn integration
     } catch (error) {
+        console.error('Error sharing badge on LinkedIn:', error);
         res.status(500).json({ error: 'Failed to share badge on LinkedIn' }); // Sending an error response if LinkedIn integration fails
     }
 });
