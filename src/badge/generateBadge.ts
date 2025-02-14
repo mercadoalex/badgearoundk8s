@@ -10,27 +10,27 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
     const { name, issuer, uniqueKey } = badgeDetails;
 
     const width = 600;
-    const height = 200;
+    const height = 400; // Increased height to accommodate additional text
     const canvas = createCanvas(width, height);
     const context = canvas.getContext('2d');
 
     // Load the base image
     const baseImage = await loadImage(path.join(__dirname, '../../assets/badge.png'));
-    context.drawImage(baseImage, 0, 0, width, height);
+    context.drawImage(baseImage, 0, 0, width, 200); // Draw the base image at the top
 
     // Personalize the badge
     context.fillStyle = '#333';
     context.font = 'bold 24px Arial';
-    context.fillText(name, 50, 50);
+    context.fillText(name, 50, 250); // Draw the name below the image
 
     context.font = '18px Arial';
-    context.fillText(`Issued by: ${issuer}`, 50, 100);
+    context.fillText(`Issued by: ${issuer}`, 50, 300); // Draw the issuer below the name
 
     context.font = '16px Arial';
-    context.fillText(`Unique Key: ${uniqueKey}`, 50, 150);
+    context.fillText(`Unique Key: ${uniqueKey}`, 50, 350); // Draw the unique key below the issuer
 
     context.font = '16px Arial';
-    context.fillText(`Date: ${new Date().toLocaleDateString()}`, 50, 180);
+    context.fillText(`Date: ${new Date().toLocaleDateString()}`, 50, 380); // Draw the date below the unique key
 
     // Save the badge as a PNG file
     const buffer = canvas.toBuffer('image/png');
