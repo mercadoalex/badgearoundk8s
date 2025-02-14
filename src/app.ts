@@ -38,6 +38,8 @@ app.post('/share-badge', async (req, res) => {
 // Starting the server and listening on the specified port
 app.listen(PORT, () => {
     console.log(`Server is running on http://${SERVER_IP}:${PORT}`);
+    console.log(`Generate Badge: http://${SERVER_IP}:${PORT}/generate-badge`);
+    console.log(`Share Badge on LinkedIn: http://${SERVER_IP}:${PORT}/share-badge`);
 });
 
 /* This code sets up a basic Express server with two routes: 
