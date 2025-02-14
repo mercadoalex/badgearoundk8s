@@ -29,3 +29,6 @@ yarn-error.log*
 # Miscellaneous
 *.swp
 *.swo
+
+#shell
+upload.sh
