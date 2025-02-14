@@ -32,3 +32,6 @@ yarn-error.log*
 
 #shell
 upload.sh
+
+#badge
+badge-original.png

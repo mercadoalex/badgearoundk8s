@@ -37,19 +37,20 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
 
         // Save the badge as a PNG file
         const buffer = canvas.toBuffer('image/png');
-        const filePath = path.join(outputDir, `${uniqueKey}.png`);
+        const fileName = `${name.replace(/\s+/g, '_')}_${issuer}.png`;
+        const filePath = path.join(outputDir, fileName);
         fs.writeFileSync(filePath, buffer);
 
         // Upload the badge to S3
         const uploadParams = {
             Bucket: 'digital-badge-bucket',
-            Key: `${uniqueKey}.png`,
+            Key: fileName,
             Body: buffer,
             ContentType: 'image/png'
         };
         await s3.send(new PutObjectCommand(uploadParams));
 
-        return `https://digital-badge-bucket.s3.amazonaws.com/${uniqueKey}.png`;
+        return `https://digital-badge-bucket.s3.amazonaws.com/${fileName}`;
     } catch (error) {
         console.error('Error generating badge:', error);
         throw error;
