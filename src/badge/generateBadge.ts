@@ -28,9 +28,15 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         context.fillText(`Issued by: ${issuer}`, 50, 300); // Draw the issuer below the name
         context.fillText(`Key: ${uniqueKey}`, 50, 350); // Draw the unique key below the issuer
 
+        // Ensure the output directory exists
+        const outputDir = path.join(__dirname, '../../output');
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
+
         // Save the badge as a PNG file
         const buffer = canvas.toBuffer('image/png');
-        const filePath = path.join(__dirname, `../../output/${uniqueKey}.png`);
+        const filePath = path.join(outputDir, `${uniqueKey}.png`);
         fs.writeFileSync(filePath, buffer);
 
         // Upload the badge to S3
