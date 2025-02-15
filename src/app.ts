@@ -13,8 +13,8 @@ generateBadge and integrateLinkedIn, from other modules. */
 
 // Creating an instance of an Express application
 const app = express();
-const PORT = process.env.PORT || 3000; // Setting the port to the value from environment variables or default to 3000
-const SERVER_IP = process.env.SERVER_IP || 'localhost'; // Setting the server IP from environment variables or default to 'localhost'
+const PORT = process.env.PORT || 3000;
+const SERVER_IP = process.env.SERVER_IP || 'localhost';
 
 // Middleware to parse JSON bodies
 app.use(express.json());
@@ -26,13 +26,13 @@ function validateKeyCode(keyCode: string): boolean {
 }
 
 // Route to generate a digital badge
-app.post('/generate-badge', async (req: Request, res: Response) => {
+app.post('/generate-badge', async (req: Request, res: Response): Promise<void> => {
     const { firstName, lastName, keyCode } = req.body; // Extracting form data from the request body
     const issuer = `KMMX-${Date.now()}`; // Generating the issuer value with a timestamp and 'KMMX-' prefix
 
     // Validate the keyCode
     if (!validateKeyCode(keyCode)) {
-        return res.send(`
+        res.send(`
             <html>
                 <head>
                     <title>Badge Generation Error</title>
@@ -44,12 +44,14 @@ app.post('/generate-badge', async (req: Request, res: Response) => {
                 </body>
             </html>
         `);
+        return;
     }
 
     const badgeDetails: Badge = {
         name: `${firstName} ${lastName}`,
         issuer,
-        uniqueKey: keyCode
+        uniqueKey: keyCode,
+        keyDescription: keyCodeCatalog[keyCode] || keyCode // Add this line
     };
 
     try {
@@ -76,44 +78,6 @@ app.post('/generate-badge', async (req: Request, res: Response) => {
     }
 });
 
-// Route to integrate with LinkedIn
-app.post('/share-badge', async (req: Request, res: Response) => {
-    const { badgeId, userToken } = req.body; // Extracting badge ID and user token from the request body
-    try {
-        const response = await integrateLinkedIn(badgeId, userToken); // Integrating with LinkedIn using the integrateLinkedIn function
-        res.status(200).json(response); // Sending the response from LinkedIn integration
-    } catch (error) {
-        console.error('Error sharing badge on LinkedIn:', error);
-        res.status(500).json({ error: 'Failed to share badge on LinkedIn' }); // Sending an error response if LinkedIn integration fails
-    }
-});
-
-// Route to serve an HTML page with a form
-app.get('/', (req: Request, res: Response) => {
-    const issuer = `KMMX-${Date.now()}`; // Generating the issuer value with a timestamp and 'KMMX-' prefix
-    res.send(`
-        <html>
-            <head>
-                <title>Badge Service</title>
-            </head>
-            <body>
-                <h1>Digital Badge Creation Service</h1>
-                <h2>Generate a Badge</h2>
-                <form action="/generate-badge" method="post">
-                    <label for="firstName">First Name:</label>
-                    <input type="text" id="firstName" name="firstName" required><br>
-                    <label for="lastName">Last Name:</label>
-                    <input type="text" id="lastName" name="lastName" required><br>
-                    <input type="hidden" id="issuer" name="issuer" value="${issuer}"><br>
-                    <label for="keyCode">Key Code:</label>
-                    <input type="text" id="keyCode" name="keyCode" required><br>
-                    <button type="submit">Generate Badge</button>
-                </form>
-            </body>
-        </html>
-    `);
-});
-
 // Starting the server and listening on the specified port
 app.listen(PORT, () => {
     console.log(`Server is running on http://${SERVER_IP}:${PORT}`);
@@ -123,3 +87,4 @@ app.listen(PORT, () => {
 
 /* This code sets up a basic Express server with two routes: 
 one for generating a digital badge and another for sharing the badge on LinkedIn. */
+

@@ -4,6 +4,7 @@ export interface Badge {
     name: string; // Name of the badge
     issuer: string; // Issuer of the badge
     uniqueKey: string; // Unique key for the badge
+    keyDescription: string;
 }
 
 // Interface for LinkedIn integration details
