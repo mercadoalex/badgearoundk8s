@@ -27,7 +27,25 @@ function validateKeyCode(keyCode: string): boolean {
 
 // Route to generate a digital badge
 app.post('/generate-badge', async (req: Request, res: Response) => {
-    const { firstName, lastName, issuer, keyCode } = req.body;
+    const { firstName, lastName, keyCode } = req.body; // Extracting form data from the request body
+    const issuer = `KMMX-${Date.now()}`; // Generating the issuer value with a timestamp and 'KMMX-' prefix
+
+    // Validate the keyCode
+    if (!validateKeyCode(keyCode)) {
+        return res.send(`
+            <html>
+                <head>
+                    <title>Badge Generation Error</title>
+                </head>
+                <body>
+                    <h1>Badge Generation Error</h1>
+                    <p style="color: red;">Not Valid</p>
+                    <p><a href="/">Go back</a></p>
+                </body>
+            </html>
+        `);
+    }
+
     const badgeDetails: Badge = {
         name: `${firstName} ${lastName}`,
         issuer,
@@ -35,15 +53,31 @@ app.post('/generate-badge', async (req: Request, res: Response) => {
     };
 
     try {
-        const badgeUrl = await generateBadge(badgeDetails);
-        res.send(`Badge generated successfully: <a href="${badgeUrl}">View Badge</a>`);
+        const badgeUrl = await generateBadge(badgeDetails); // Generating the badge using the generateBadge function
+        res.send(`
+            <html>
+                <head>
+                    <title>Badge Generated</title>
+                </head>
+                <body>
+                    <h1>Badge Generated Successfully</h1>
+                    <p>Here is your badge:</p>
+                    <img src="${badgeUrl}" alt="Generated Badge">
+                    <ul>
+                        <li><a href="http://${SERVER_IP}:${PORT}/share-badge">Share Badge on LinkedIn</a></li>
+                    </ul>
+                    <p><a href="/">Go back</a></p>
+                </body>
+            </html>
+        `); // Sending the URL of the generated badge as the response
     } catch (error) {
-        res.status(500).send('Error generating badge');
+        console.error('Error generating badge:', error);
+        res.status(500).send('Error generating badge'); // Sending an error response if badge generation fails
     }
 });
 
 // Route to integrate with LinkedIn
-app.post('/share-badge', async (req, res) => {
+app.post('/share-badge', async (req: Request, res: Response) => {
     const { badgeId, userToken } = req.body; // Extracting badge ID and user token from the request body
     try {
         const response = await integrateLinkedIn(badgeId, userToken); // Integrating with LinkedIn using the integrateLinkedIn function
@@ -55,7 +89,7 @@ app.post('/share-badge', async (req, res) => {
 });
 
 // Route to serve an HTML page with a form
-app.get('/', (req, res) => {
+app.get('/', (req: Request, res: Response) => {
     const issuer = `KMMX-${Date.now()}`; // Generating the issuer value with a timestamp and 'KMMX-' prefix
     res.send(`
         <html>

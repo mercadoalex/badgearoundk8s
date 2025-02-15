@@ -62,7 +62,7 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         context.font = '12px Arial, OpenSans'; // Use Arial with fallback to OpenSans
         const lines = [`Successfully completed the training:`, keyDescription];
         lines.forEach((line, index) => {
-            context.fillText(line, 10, baseImage.height + 25 + (index * 15));
+            context.fillText(line, 5, baseImage.height + 25 + (index * 15));
         });
 
         // Ensure the output directory exists
