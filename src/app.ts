@@ -78,6 +78,21 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
     }
 });
 
+// Route for the root URL
+app.get('/', (req: Request, res: Response) => {
+    res.send(`
+        <html>
+            <head>
+                <title>Welcome</title>
+            </head>
+            <body>
+                <h1>Welcome to the Badge Generation Service</h1>
+                <p><a href="/generate-badge">Generate a Badge</a></p>
+            </body>
+        </html>
+    `);
+});
+
 // Starting the server and listening on the specified port
 app.listen(PORT, () => {
     console.log(`Server is running on http://${SERVER_IP}:${PORT}`);
@@ -85,6 +100,6 @@ app.listen(PORT, () => {
     console.log(`Share Badge on LinkedIn: http://${SERVER_IP}:${PORT}/share-badge`);
 });
 
-/* This code sets up a basic Express server with two routes: 
-one for generating a digital badge and another for sharing the badge on LinkedIn. */
+/* This code sets up a basic Express server with three routes: 
+one for generating a digital badge, one for sharing the badge on LinkedIn, and one for the root URL. */
 
