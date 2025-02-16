@@ -141,7 +141,7 @@ app.get('/', (req: Request, res: Response) => {
         <html>
             <head>
                 <title>Welcome</title>
-                <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+                <script src="https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}" async defer></script>
                 <script>
                     const keyCodeCatalog = ${JSON.stringify(keyCodeCatalog)};
                     function confirmSubmission(event) {
@@ -152,11 +152,21 @@ app.get('/', (req: Request, res: Response) => {
                             event.preventDefault();
                         }
                     }
+
+                    function onSubmit(token) {
+                        document.getElementById("badgeForm").submit();
+                    }
+
+                    grecaptcha.ready(function() {
+                        grecaptcha.execute('${RECAPTCHA_SITE_KEY}', {action: 'submit'}).then(function(token) {
+                            document.getElementById('g-recaptcha-response').value = token;
+                        });
+                    });
                 </script>
             </head>
             <body>
                 <h1>Welcome to the Badge Generation Service</h1>
-                <form action="/generate-badge" method="post" onsubmit="confirmSubmission(event)">
+                <form id="badgeForm" action="/generate-badge" method="post" onsubmit="confirmSubmission(event)">
                     <label for="firstName">First Name:</label>
                     <input type="text" id="firstName" name="firstName" required><br>
                     <label for="lastName">Last Name:</label>
@@ -168,7 +178,7 @@ app.get('/', (req: Request, res: Response) => {
                     <label for="email">Email:</label>
                     <input type="email" id="email" name="email" required><br>
                     <input type="hidden" id="hiddenField" name="hiddenField" value="${hiddenFieldValue}"><br>
-                    <div class="g-recaptcha" data-sitekey="${RECAPTCHA_SITE_KEY}"></div><br>
+                    <input type="hidden" id="g-recaptcha-response" name="g-recaptcha-response"><br>
                     <button type="submit">Generate Badge</button>
                 </form>
             </body>
