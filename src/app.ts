@@ -18,8 +18,8 @@ const PORT = process.env.PORT || 3000;
 const SERVER_IP = process.env.SERVER_IP || 'localhost';
 
 // reCAPTCHA keys
-const RECAPTCHA_SITE_KEY = 'your-site-key';
-const RECAPTCHA_SECRET_KEY = 'your-secret-key';
+const RECAPTCHA_SITE_KEY = '6LcIL9kqAAAAADcPI3WqzdAvt3ToRKBT8YoOiWG9';
+const RECAPTCHA_SECRET_KEY = '6LcIL9kqAAAAANmvk0ey7qBAE5HO4AjyavZeI51h';
 
 // Middleware to parse JSON bodies
 app.use(express.json());
