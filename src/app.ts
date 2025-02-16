@@ -142,10 +142,19 @@ app.get('/', (req: Request, res: Response) => {
             <head>
                 <title>Welcome</title>
                 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+                <script>
+                    function confirmSubmission(event) {
+                        const keyCode = document.getElementById('keyCode').value;
+                        const confirmation = confirm('Badge: ' + keyCode + '\\n\\nDo you want to proceed?');
+                        if (!confirmation) {
+                            event.preventDefault();
+                        }
+                    }
+                </script>
             </head>
             <body>
                 <h1>Welcome to the Badge Generation Service</h1>
-                <form action="/generate-badge" method="post">
+                <form action="/generate-badge" method="post" onsubmit="confirmSubmission(event)">
                     <label for="firstName">First Name:</label>
                     <input type="text" id="firstName" name="firstName" required><br>
                     <label for="lastName">Last Name:</label>
