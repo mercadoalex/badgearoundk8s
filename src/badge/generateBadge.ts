@@ -3,14 +3,27 @@ import { Badge } from '../types';
 import fs from 'fs';
 import path from 'path';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { Client } from 'pg';
+import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 
 // Load the KeyCode Catalog
 const keyCodeCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, '../../assets/keyCodeCatalog.json'), 'utf-8'));
 
 const s3 = new S3Client({ region: 'us-west-2' });
+const secretsManager = new SecretsManagerClient({ region: 'us-west-2' });
+
+async function getDbCredentials() {
+    const secretName = "dev/postgresql";
+    const command = new GetSecretValueCommand({ SecretId: secretName });
+    const response = await secretsManager.send(command);
+    if (!response.SecretString) {
+        throw new Error('SecretString is empty');
+    }
+    return JSON.parse(response.SecretString);
+}
 
 export async function generateBadge(badgeDetails: Badge): Promise<string> {
-    const { name, issuer, uniqueKey } = badgeDetails;
+    const { name, issuer, uniqueKey, firstName, lastName, studentId, hiddenField, email } = badgeDetails;
 
     const width = 600;
     const height = 400; // Increased height to accommodate additional text
@@ -78,7 +91,27 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         };
         await s3.send(new PutObjectCommand(uploadParams));
 
-        return `https://digital-badge-bucket.s3.amazonaws.com/${uniqueKey}.png`;
+        const badgeUrl = `https://digital-badge-bucket.s3.amazonaws.com/${uniqueKey}.png`;
+
+        // Insert the badge details into the PostgreSQL database
+        const dbCredentials = await getDbCredentials();
+        const client = new Client({
+            user: dbCredentials.username,
+            host: dbCredentials.host,
+            database: 'badge_db',
+            password: dbCredentials.password,
+            port: dbCredentials.port,
+        });
+        await client.connect();
+        const insertQuery = `
+            INSERT INTO badges (first_name, last_name, issuer, key_code, key_description, badge_url, student_id, hidden_field, email)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `;
+        const values = [firstName, lastName, issuer, uniqueKey, keyCodeCatalog[uniqueKey] || uniqueKey, badgeUrl, studentId, hiddenField, email];
+        await client.query(insertQuery, values);
+        await client.end();
+
+        return badgeUrl;
     } catch (error) {
         console.error('Error generating badge:', error);
         throw error;

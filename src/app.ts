@@ -33,7 +33,7 @@ function validateEmail(email: string): boolean {
 
 // Route to generate a digital badge
 app.post('/generate-badge', async (req: Request, res: Response): Promise<void> => {
-    const { firstName, lastName, keyCode, email, hiddenField } = req.body; // Extracting form data from the request body
+    const { firstName, lastName, keyCode, email, hiddenField, studentId } = req.body; // Extracting form data from the request body
     const issuer = hiddenField; // Use the hidden field value as the issuer
 
     // Validate the keyCode
@@ -63,6 +63,23 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
                 <body>
                     <h1>Badge Generation Error</h1>
                     <p style="color: red;">Invalid Email Format</p>
+                    <p><a href="/">Go back</a></p>
+                </body>
+            </html>
+        `);
+        return;
+    }
+
+    // Validate the student ID
+    if (studentId < 100 || studentId > 151) {
+        res.send(`
+            <html>
+                <head>
+                    <title>Badge Generation Error</title>
+                </head>
+                <body>
+                    <h1>Badge Generation Error</h1>
+                    <p style="color: red;">Invalid Student ID</p>
                     <p><a href="/">Go back</a></p>
                 </body>
             </html>
@@ -137,6 +154,8 @@ app.get('/', (req: Request, res: Response) => {
                     </select><br>
                     <label for="email">Email:</label>
                     <input type="email" id="email" name="email" required><br>
+                    <label for="studentId">Student ID:</label>
+                    <input type="number" id="studentId" name="studentId" min="100" max="151" required><br>
                     <input type="hidden" id="hiddenField" name="hiddenField" value="${hiddenFieldValue}"><br>
                     <button type="submit">Generate Badge</button>
                 </form>
