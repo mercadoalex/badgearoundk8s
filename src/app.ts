@@ -105,6 +105,9 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
 app.get('/', (req: Request, res: Response) => {
     const hiddenFieldValue = `KMMX-${Date.now()}`; // Generate the hidden field value
 
+    // Generate the list of key codes
+    const keyCodeOptions = Object.keys(keyCodeCatalog).map(keyCode => `<option value="${keyCode}">${keyCode}</option>`).join('');
+
     res.send(`
         <html>
             <head>
@@ -118,7 +121,9 @@ app.get('/', (req: Request, res: Response) => {
                     <label for="lastName">Last Name:</label>
                     <input type="text" id="lastName" name="lastName" required><br>
                     <label for="keyCode">Key Code:</label>
-                    <input type="text" id="keyCode" name="keyCode" required><br>
+                    <select id="keyCode" name="keyCode" required>
+                        ${keyCodeOptions}
+                    </select><br>
                     <label for="email">Email:</label>
                     <input type="email" id="email" name="email" required><br>
                     <input type="hidden" id="hiddenField" name="hiddenField" value="${hiddenFieldValue}"><br>
