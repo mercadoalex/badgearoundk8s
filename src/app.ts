@@ -17,7 +17,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const SERVER_IP = process.env.SERVER_IP || 'localhost';
 
-// reCAPTCHA keys
+// reCAPTCHA keys (replace with your actual keys)
 const RECAPTCHA_SITE_KEY = '6LcIL9kqAAAAADcPI3WqzdAvt3ToRKBT8YoOiWG9';
 const RECAPTCHA_SECRET_KEY = '6LcIL9kqAAAAANmvk0ey7qBAE5HO4AjyavZeI51h';
 
@@ -143,9 +143,11 @@ app.get('/', (req: Request, res: Response) => {
                 <title>Welcome</title>
                 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
                 <script>
+                    const keyCodeCatalog = ${JSON.stringify(keyCodeCatalog)};
                     function confirmSubmission(event) {
                         const keyCode = document.getElementById('keyCode').value;
-                        const confirmation = confirm('Badge: ' + keyCode + '\\n\\nDo you want to proceed?');
+                        const keyDescription = keyCodeCatalog[keyCode] || keyCode;
+                        const confirmation = confirm('Badge: ' + keyDescription + '\\n\\nDo you want to proceed?');
                         if (!confirmation) {
                             event.preventDefault();
                         }
