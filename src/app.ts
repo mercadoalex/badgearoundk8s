@@ -25,10 +25,16 @@ function validateKeyCode(keyCode: string): boolean {
     return keyCode in keyCodeCatalog;
 }
 
+// Function to validate email format
+function validateEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
 // Route to generate a digital badge
 app.post('/generate-badge', async (req: Request, res: Response): Promise<void> => {
-    const { firstName, lastName, keyCode } = req.body; // Extracting form data from the request body
-    const issuer = `KMMX-${Date.now()}`; // Generating the issuer value with a timestamp and 'KMMX-' prefix
+    const { firstName, lastName, keyCode, email, hiddenField } = req.body; // Extracting form data from the request body
+    const issuer = hiddenField; // Use the hidden field value as the issuer
 
     // Validate the keyCode
     if (!validateKeyCode(keyCode)) {
@@ -40,6 +46,23 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
                 <body>
                     <h1>Badge Generation Error</h1>
                     <p style="color: red;">Not Valid</p>
+                    <p><a href="/">Go back</a></p>
+                </body>
+            </html>
+        `);
+        return;
+    }
+
+    // Validate the email format
+    if (!validateEmail(email)) {
+        res.send(`
+            <html>
+                <head>
+                    <title>Badge Generation Error</title>
+                </head>
+                <body>
+                    <h1>Badge Generation Error</h1>
+                    <p style="color: red;">Invalid Email Format</p>
                     <p><a href="/">Go back</a></p>
                 </body>
             </html>
@@ -80,6 +103,8 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
 
 // Route for the root URL
 app.get('/', (req: Request, res: Response) => {
+    const hiddenFieldValue = `KMMX-${Date.now()}`; // Generate the hidden field value
+
     res.send(`
         <html>
             <head>
@@ -87,7 +112,18 @@ app.get('/', (req: Request, res: Response) => {
             </head>
             <body>
                 <h1>Welcome to the Badge Generation Service</h1>
-                <p><a href="/generate-badge">Generate a Badge</a></p>
+                <form action="/generate-badge" method="post">
+                    <label for="firstName">First Name:</label>
+                    <input type="text" id="firstName" name="firstName" required><br>
+                    <label for="lastName">Last Name:</label>
+                    <input type="text" id="lastName" name="lastName" required><br>
+                    <label for="keyCode">Key Code:</label>
+                    <input type="text" id="keyCode" name="keyCode" required><br>
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required><br>
+                    <input type="hidden" id="hiddenField" name="hiddenField" value="${hiddenFieldValue}"><br>
+                    <button type="submit">Generate Badge</button>
+                </form>
             </body>
         </html>
     `);
@@ -101,5 +137,5 @@ app.listen(PORT, () => {
 });
 
 /* This code sets up a basic Express server with three routes: 
-one for generating a digital badge, one for sharing the badge on LinkedIn, and one for the root URL. */
+one for generating a digital badge, one for sharing the badge on LinkedIn, and one for the root URL with a form to generate a badge. */
 
