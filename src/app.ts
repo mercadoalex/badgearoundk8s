@@ -4,6 +4,7 @@ import { integrateLinkedIn } from './linkedin/integrateLinkedIn';
 import { Badge } from './types';
 import fs from 'fs';
 import path from 'path';
+import axios from 'axios';
 
 // Load the KeyCode Catalog
 const keyCodeCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, '../assets/keyCodeCatalog.json'), 'utf-8'));
@@ -15,6 +16,10 @@ generateBadge and integrateLinkedIn, from other modules. */
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SERVER_IP = process.env.SERVER_IP || 'localhost';
+
+// reCAPTCHA keys
+const RECAPTCHA_SITE_KEY = 'your-site-key';
+const RECAPTCHA_SECRET_KEY = 'your-secret-key';
 
 // Middleware to parse JSON bodies
 app.use(express.json());
@@ -31,10 +36,34 @@ function validateEmail(email: string): boolean {
     return emailRegex.test(email);
 }
 
+// Function to verify reCAPTCHA
+async function verifyRecaptcha(token: string): Promise<boolean> {
+    const response = await axios.post(`https://www.google.com/recaptcha/api/siteverify?secret=${RECAPTCHA_SECRET_KEY}&response=${token}`);
+    return response.data.success;
+}
+
 // Route to generate a digital badge
 app.post('/generate-badge', async (req: Request, res: Response): Promise<void> => {
-    const { firstName, lastName, keyCode, email, hiddenField } = req.body; // Extracting form data from the request body
+    const { firstName, lastName, keyCode, email, hiddenField, 'g-recaptcha-response': recaptchaToken } = req.body; // Extracting form data from the request body
     const issuer = hiddenField; // Use the hidden field value as the issuer
+
+    // Verify reCAPTCHA
+    const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
+    if (!isRecaptchaValid) {
+        res.send(`
+            <html>
+                <head>
+                    <title>Badge Generation Error</title>
+                </head>
+                <body>
+                    <h1>Badge Generation Error</h1>
+                    <p style="color: red;">Invalid reCAPTCHA</p>
+                    <p><a href="/">Go back</a></p>
+                </body>
+            </html>
+        `);
+        return;
+    }
 
     // Validate the keyCode
     if (!validateKeyCode(keyCode)) {
@@ -112,6 +141,7 @@ app.get('/', (req: Request, res: Response) => {
         <html>
             <head>
                 <title>Welcome</title>
+                <script src="https://www.google.com/recaptcha/api.js" async defer></script>
             </head>
             <body>
                 <h1>Welcome to the Badge Generation Service</h1>
@@ -127,6 +157,7 @@ app.get('/', (req: Request, res: Response) => {
                     <label for="email">Email:</label>
                     <input type="email" id="email" name="email" required><br>
                     <input type="hidden" id="hiddenField" name="hiddenField" value="${hiddenFieldValue}"><br>
+                    <div class="g-recaptcha" data-sitekey="${RECAPTCHA_SITE_KEY}"></div><br>
                     <button type="submit">Generate Badge</button>
                 </form>
             </body>
