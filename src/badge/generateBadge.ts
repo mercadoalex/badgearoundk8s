@@ -16,7 +16,7 @@ async function getDbCredentials() {
     const secretName = "dev/postgresql";
     const command = new GetSecretValueCommand({ SecretId: secretName });
     console.log(`Fetching secret: ${secretName}`);
-    try {
+  try {
         const response = await secretsManager.send(command);
         if (!response.SecretString) {
             throw new Error('SecretString is empty');
