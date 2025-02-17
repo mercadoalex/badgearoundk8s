@@ -5,6 +5,11 @@ export interface Badge {
     issuer: string; // Issuer of the badge
     uniqueKey: string; // Unique key for the badge
     keyDescription: string;
+    firstName: string; 
+    lastName: string;  
+    studentId: string; 
+    hiddenField: string; 
+    email: string; 
 }
 
 // Interface for LinkedIn integration details
