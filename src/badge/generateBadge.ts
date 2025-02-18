@@ -16,7 +16,7 @@ async function getDbCredentials() {
     const secretName = "dev/postgresql";
     const command = new GetSecretValueCommand({ SecretId: secretName });
     console.log(`Fetching secret: ${secretName}`);
-  try {
+    try {
         const response = await secretsManager.send(command);
         if (!response.SecretString) {
             throw new Error('SecretString is empty');
@@ -31,6 +31,10 @@ async function getDbCredentials() {
 
 export async function generateBadge(badgeDetails: Badge): Promise<string> {
     const { name, issuer, uniqueKey, firstName, lastName, studentId, hiddenField, email } = badgeDetails;
+
+    if (!firstName || !lastName || !studentId || !hiddenField || !email) {
+        throw new Error('Missing required badge details');
+    }
 
     const width = 600;
     const height = 400; // Increased height to accommodate additional text
