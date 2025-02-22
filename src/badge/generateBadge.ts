@@ -30,7 +30,7 @@ async function getDbCredentials() {
 }
 
 export async function generateBadge(badgeDetails: Badge): Promise<string> {
-    const { name, issuer, uniqueKey, firstName, lastName, studentId, hiddenField, email } = badgeDetails;
+    const { firstName, lastName, keyCode, email, studentId, hiddenField } = badgeDetails;
 
     if (!firstName || !lastName || !studentId || !hiddenField || !email) {
         throw new Error('Missing required badge details');
@@ -50,11 +50,11 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         // Personalize the badge
         context.fillStyle = '#333';
         context.font = 'bold 24px Arial';
-        context.fillText(name, 50, 250); // Draw the name below the image
+        context.fillText(`${firstName} ${lastName}`, 50, 250); // Draw the name below the image
 
         context.font = '18px Arial';
         context.fillText(`Issued by: ${issuer}`, 50, 300); // Draw the issuer below the name
-        context.fillText(`Key: ${uniqueKey}`, 50, 350); // Draw the unique key below the issuer
+        context.fillText(`Key: ${keyCode}`, 50, 350); // Draw the unique key below the issuer
 
         // Function to split text into multiple lines based on the width of the canvas
         function wrapText(context: CanvasContext, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
@@ -78,7 +78,7 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         // Draw the text above the base image
         context.font = '12px Arial, OpenSans'; // Use Arial with fallback to OpenSans
         wrapText(context, 'Successfully completed the training:', 10, 50, width - 20, 15);
-        wrapText(context, keyCodeCatalog[uniqueKey] || uniqueKey, 10, 65, width - 20, 15);
+        wrapText(context, keyCodeCatalog[keyCode] || keyCode, 10, 65, width - 20, 15);
 
         // Draw the base image on the canvas
         context.drawImage(baseImage, 0, 80, width, baseImage.height);
@@ -91,13 +91,13 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
 
         // Save the badge as a PNG file
         const buffer = canvas.toBuffer('image/png');
-        const filePath = path.join(outputDir, `${uniqueKey}.png`);
+        const filePath = path.join(outputDir, `${keyCode}.png`);
         fs.writeFileSync(filePath, buffer);
 
         // Upload the badge to S3
         const uploadParams = {
             Bucket: 'digital-badge-bucket',
-            Key: `${uniqueKey}.png`,
+            Key: `${keyCode}.png`,
             Body: buffer,
             ContentType: 'image/png'
         };
@@ -105,7 +105,7 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         await s3.send(new PutObjectCommand(uploadParams));
         console.log('Badge uploaded to S3 successfully');
 
-        const badgeUrl = `https://digital-badge-bucket.s3.amazonaws.com/${uniqueKey}.png`;
+        const badgeUrl = `https://digital-badge-bucket.s3.amazonaws.com/${keyCode}.png`;
 
         // Insert the badge details into the PostgreSQL database
         console.log('Fetching database credentials');
@@ -125,7 +125,7 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
             INSERT INTO badges (first_name, last_name, issuer, key_code, key_description, badge_url, student_id, hidden_field, email)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         `;
-        const values = [firstName, lastName, issuer, uniqueKey, keyCodeCatalog[uniqueKey] || uniqueKey, badgeUrl, studentId, hiddenField, email];
+        const values = [firstName, lastName, 'Your Issuer Name', keyCode, keyCodeCatalog[keyCode] || keyCode, badgeUrl, studentId, hiddenField, email];
         await client.query(insertQuery, values);
         console.log('Badge details inserted into PostgreSQL database successfully');
         await client.end();
