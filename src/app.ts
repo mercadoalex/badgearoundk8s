@@ -1,6 +1,5 @@
 import express, { Request, Response } from 'express';
 import { generateBadge } from './badge/generateBadge';
-import { integrateLinkedIn } from './linkedin/integrateLinkedIn';
 import { Badge } from './types';
 import fs from 'fs';
 import path from 'path';
@@ -45,7 +44,7 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
                 </head>
                 <body>
                     <h1>Badge Generation Error</h1>
-                    <p style="color: red;">Not Valid</p>
+                    <p style="color: red;">Invalid Key Code</p>
                     <p><a href="/">Go back</a></p>
                 </body>
             </html>
@@ -87,11 +86,17 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
         return;
     }
 
+    // Create the badgeDetails object
     const badgeDetails: Badge = {
-        name: `${firstName} ${lastName}`,
+        name: `${firstName} ${lastName}`, // Add the name property
+        firstName,
+        lastName,
+        email,
+        studentId,
+        hiddenField,
         issuer,
         uniqueKey: keyCode,
-        keyDescription: keyCodeCatalog[keyCode] || keyCode // Add this line
+        keyDescription: keyCodeCatalog[keyCode] || keyCode
     };
 
     try {
