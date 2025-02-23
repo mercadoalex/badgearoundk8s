@@ -143,8 +143,11 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
                     <link rel="stylesheet" type="text/css" href="/css/main.css">
                 </head>
                 <body>
-                    <h1>Badge Generated Successfully</h1>
-                    <p>Here is your badge:</p>
+                    <div class="container-contact100">
+		            <div class="wrap-contact100">
+                     <span class="contact100-form-title">
+					        Here is your badge:
+				    </span>
                     <img src="${badgeUrl}" alt="Generated Badge">
                     <ul>
                         <li><a href="http://${SERVER_IP}:${PORT}/share-badge">Share Badge on LinkedIn</a></li>
@@ -211,9 +214,13 @@ app.get('/', (req: Request, res: Response) => {
                 </script>
             </head>
             <body>
-                <h1>Welcome to the Badge Generation Service</h1>
-                <h3>Recognize accomplishments with 100% verifiable digital badges</h3>
-                <form id="badgeForm" action="/generate-badge" method="post" onsubmit="confirmSubmission(event)">
+            	<div class="container-contact100">
+		        <div class="wrap-contact100">
+                <span class="contact100-form-title">
+					Welcome to the Badge Generation Service
+				</span>
+                <p>Recognize accomplishments with 100% verifiable digital badges</p>
+                <form class="contact100-form validate-form" id="badgeForm" action="/generate-badge" method="post" onsubmit="confirmSubmission(event)">
                     <label for="firstName">First Name:</label>
                     <input type="text" id="firstName" name="firstName" required><br>
                     <label for="lastName">Last Name:</label>
@@ -228,16 +235,8 @@ app.get('/', (req: Request, res: Response) => {
                     <input type="number" id="studentId" name="studentId" min="100" max="151" required><br>
                     <input type="hidden" id="hiddenField" name="hiddenField" value="${hiddenFieldValue}"><br>
                     <button type="submit">Generate Badge</button>
-                </form>
+                			
 
-                dfsgfhfkhjklfjhjflghklfkhfglhkñgfhkgflhkfghlñfgkhlgfñhklñghklfghkgfñlhkfghklfgkhkfglhkfglks
-
-	<div class="container-contact100">
-		<div class="wrap-contact100">
-			<form class="contact100-form validate-form">
-				<span class="contact100-form-title">
-					Say Hello!
-				</span>
 
 				<div class="wrap-input100 validate-input" data-validate="Name is required">
 					<span class="label-input100">Your Name</span>
@@ -301,31 +300,31 @@ app.get('/', (req: Request, res: Response) => {
 
 	<div id="dropDownSelect1"></div>
 
-    <!--===============================================================================================-->
-	<script src="vendor/jquery/jquery-3.2.1.min.js"></script>
-    <!--===============================================================================================-->
-	<script src="vendor/animsition/js/animsition.min.js"></script>
-    <!--===============================================================================================-->
-	<script src="vendor/bootstrap/js/popper.js"></script>
-	<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
-    <!--===============================================================================================-->
-	<script src="vendor/select2/select2.min.js"></script>
-	<script>
-		$(".selection-2").select2({
-			minimumResultsForSearch: 20,
-			dropdownParent: $('#dropDownSelect1')
-		});
-	</script>
-    <!--===============================================================================================-->
-	<script src="vendor/daterangepicker/moment.min.js"></script>
-	<script src="vendor/daterangepicker/daterangepicker.js"></script>
-    <!--===============================================================================================-->
-	<script src="vendor/countdowntime/countdowntime.js"></script>
-    <!--===============================================================================================-->
-	<script src="js/main.js"></script>
+            <!--===============================================================================================-->
+	<script src="/scripts/jquery/jquery-3.2.1.min.js"></script>
+            <!--===============================================================================================-->
+	<script src="/scripts/animsition.min.js"></script>
+            <!--===============================================================================================-->
+	<script src="/scripts/popper.js"></script>
+	<script src="/scripts/bootstrap.min.js"></script>
+            <!--===============================================================================================-->
+	<script src="/scripts/select2.min.js"></script>
+	        <script>
+		        $(".selection-2").select2({
+			        minimumResultsForSearch: 20,
+			        dropdownParent: $('#dropDownSelect1')
+		        });
+	        </script>
+            <!--===============================================================================================-->
+	        <script src="/scripts/moment.min.js"></script>
+	        <script src="/scripts/daterangepicker.js"></script>
+            <!--===============================================================================================-->
+	        <script src="/scripts/countdowntime.js"></script>
+            <!--===============================================================================================-->
+	        <script src="/scripts/main.js"></script>
 
-            </body>
-        </html>
+        </body>
+    </html>
     `);
 });
 
