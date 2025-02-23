@@ -30,9 +30,9 @@ async function getDbCredentials() {
 }
 
 export async function generateBadge(badgeDetails: Badge): Promise<string> {
-    const { firstName, lastName, keyCode, email, studentId, hiddenField } = badgeDetails;
+    const { firstName, lastName, keyCode, email, studentId, hiddenField, issuer } = badgeDetails;
 
-    if (!firstName || !lastName || !studentId || !hiddenField || !email) {
+    if (!firstName || !lastName || !studentId || !hiddenField || !email || !issuer) {
         throw new Error('Missing required badge details');
     }
 
@@ -125,7 +125,7 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
             INSERT INTO badges (first_name, last_name, issuer, key_code, key_description, badge_url, student_id, hidden_field, email)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         `;
-        const values = [firstName, lastName, 'Your Issuer Name', keyCode, keyCodeCatalog[keyCode] || keyCode, badgeUrl, studentId, hiddenField, email];
+        const values = [firstName, lastName, issuer, keyCode, keyCodeCatalog[keyCode] || keyCode, badgeUrl, studentId, hiddenField, email];
         await client.query(insertQuery, values);
         console.log('Badge details inserted into PostgreSQL database successfully');
         await client.end();
