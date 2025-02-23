@@ -148,6 +148,7 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
                      <span class="contact100-form-title">
 					        Here is your badge:
 				    </span>
+              
                     <img src="${badgeUrl}" alt="Generated Badge">
                     <ul>
                         <li><a href="http://${SERVER_IP}:${PORT}/share-badge">Share Badge on LinkedIn</a></li>
@@ -178,8 +179,8 @@ app.get('/', (req: Request, res: Response) => {
         <html lang="en">
             <head>
                 <title>Welcome To the Digital Badge Creator</title>
-                	<meta charset="UTF-8">
-	                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <meta charset="UTF-8">
+	            <meta name="viewport" content="width=device-width, initial-scale=1">
                 <!--===============================================================================================-->
 	            <link rel="icon" type="image/png" href="images/icons/favicon.ico">
                 <!--===============================================================================================-->
@@ -201,7 +202,7 @@ app.get('/', (req: Request, res: Response) => {
 	            <link rel="stylesheet" type="text/css" href="/css/main.css">
                 <!--===============================================================================================-->
                 <meta name="robots" content="noindex, follow">
-                    <script>
+                <script>
                     const keyCodeCatalog = ${JSON.stringify(keyCodeCatalog)};
                     function confirmSubmission(event) {
                         const keyCode = document.getElementById('keyCode').value;
@@ -213,76 +214,42 @@ app.get('/', (req: Request, res: Response) => {
                     }
                 </script>
             </head>
-            <body>
-            	<div class="container-contact100">
-		        <div class="wrap-contact100">
+    <body>
+        <div class="container-contact100">
+		<div class="wrap-contact100">
+        <form class="contact100-form validate-form" id="badgeForm" action="/generate-badge" method="post" onsubmit="confirmSubmission(event)">
                 <span class="contact100-form-title">
 					Welcome to the Badge Generation Service
 				</span>
-                <p>Recognize accomplishments with 100% verifiable digital badges</p>
-                <form class="contact100-form validate-form" id="badgeForm" action="/generate-badge" method="post" onsubmit="confirmSubmission(event)">
-                    <label for="firstName">First Name:</label>
-                    <input type="text" id="firstName" name="firstName" required><br>
-                    <label for="lastName">Last Name:</label>
-                    <input type="text" id="lastName" name="lastName" required><br>
-                    <label for="keyCode">Key Code:</label>
-                    <select id="keyCode" name="keyCode" required>
-                        ${keyCodeOptions}
-                    </select><br>
-                    <label for="email">Email:</label>
-                    <input type="email" id="email" name="email" required><br>
-                    <label for="studentId">Student ID:</label>
-                    <input type="number" id="studentId" name="studentId" min="100" max="151" required><br>
-                    <input type="hidden" id="hiddenField" name="hiddenField" value="${hiddenFieldValue}"><br>
-                    <button type="submit">Generate Badge</button>
-                			
-
-
-				<div class="wrap-input100 validate-input" data-validate="Name is required">
-					<span class="label-input100">Your Name</span>
-					<input class="input100" type="text" name="name" placeholder="Enter your name">
-					<span class="focus-input100"></span>
-				</div>
-
-				<div class="wrap-input100 validate-input" data-validate = "Valid email is required: ex@abc.xyz">
+                <p> Recognize accomplishments with 100% verifiable digital badges </p>
+                <div class="wrap-input100 validate-input" data-validate=" First Name is required">
+                    <span class="label-input100">First Name</span>
+                    <input class="input100" type="text" name="name" placeholder="Enter First name">
+                    <span class="focus-input100"></span>
+                </div>
+                <div class="wrap-input100 validate-input" data-validate=" Last Name is required">
+                    <span class="label-input100">Last Name</span>
+                    <input class="input100" type="text" name="name" placeholder="Enter Last name">
+                    <span class="focus-input100"></span>
+                </div>
+                <div class="wrap-input100 validate-input" data-validate = "Valid email is required: ex@abc.xyz">
 					<span class="label-input100">Email</span>
 					<input class="input100" type="text" name="email" placeholder="Enter your email addess">
 					<span class="focus-input100"></span>
 				</div>
-
-				<div class="wrap-input100 input100-select">
-					<span class="label-input100">Needed Services</span>
-					<div>
-						<select class="selection-2" name="service">
-							<option>Choose Services</option>
-							<option>Online Store</option>
-							<option>eCommerce Bussiness</option>
-							<option>UI/UX Design</option>
-							<option>Online Services</option>
-						</select>
-					</div>
+                <div class="wrap-input100 validate-input" data-validate = "Key Code is required">
+					<span class="label-input100">Key Code</span>
+                    <select class="input100" id="keyCode" name="keyCode" required>
+                        ${keyCodeOptions}
+                    </select>
 					<span class="focus-input100"></span>
 				</div>
-
-				<div class="wrap-input100 input100-select">
-					<span class="label-input100">Budget</span>
-					<div>
-						<select class="selection-2" name="budget">
-							<option>Select Budget</option>
-							<option>1500 $</option>
-							<option>2000 $</option>
-							<option>2500 $</option>
-						</select>
-					</div>
+                 <div class="wrap-input100 validate-input" data-validate = "Particpant Id is requiered">
+					<span class="label-input100">Student Id:l</span>
+					<input class="input100" type="number" name="studentId" min="100" max="151" placeholder="Enter your email addess">
 					<span class="focus-input100"></span>
 				</div>
-
-				<div class="wrap-input100 validate-input" data-validate = "Message is required">
-					<span class="label-input100">Message</span>
-					<textarea class="input100" name="message" placeholder="Your message here..."></textarea>
-					<span class="focus-input100"></span>
-				</div>
-
+                    <input type="hidden" id="hiddenField" name="hiddenField" value="${hiddenFieldValue}"><br>
 				<div class="container-contact100-form-btn">
 					<div class="wrap-contact100-form-btn">
 						<div class="contact100-form-bgbtn"></div>
@@ -297,7 +264,6 @@ app.get('/', (req: Request, res: Response) => {
 			</form>
 		</div>
 	</div>
-
 	<div id="dropDownSelect1"></div>
 
             <!--===============================================================================================-->
