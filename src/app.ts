@@ -6,6 +6,8 @@ import path from 'path';
 
 // Load the KeyCode Catalog
 const keyCodeCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, '../assets/keyCodeCatalog.json'), 'utf-8'));
+// Load the Issuer Catalog
+const issuerCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, '../assets/issuerCatalog.json'), 'utf-8'));
 
 /* The code imports the express module for creating the server and two functions, 
 generateBadge and integrateLinkedIn, from other modules. */
@@ -19,9 +21,17 @@ const SERVER_IP = process.env.SERVER_IP || 'localhost';
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // Middleware to parse URL-encoded bodies
 
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, '../public')));
+
 // Function to validate keyCode
 function validateKeyCode(keyCode: string): boolean {
     return keyCode in keyCodeCatalog;
+}
+
+// Function to validate issuer
+function validateIssuer(issuerCode: string): boolean {
+    return issuerCode in issuerCatalog;
 }
 
 // Function to validate email format
@@ -32,8 +42,7 @@ function validateEmail(email: string): boolean {
 
 // Route to generate a digital badge
 app.post('/generate-badge', async (req: Request, res: Response): Promise<void> => {
-    const { firstName, lastName, keyCode, email, hiddenField, studentId } = req.body; // Extracting form data from the request body
-    const issuer = hiddenField; // Use the hidden field value as the issuer
+    const { firstName, lastName, keyCode, email, studentId, issuer } = req.body; // Extracting form data from the request body
 
     // Validate the keyCode
     if (!validateKeyCode(keyCode)) {
@@ -54,6 +63,32 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
                 <body>
                     <h1>Badge Generation Error</h1>
                     <p style="color: red;">Invalid Key Code</p>
+                    <p><a href="/">Go back</a></p>
+                </body>
+            </html>
+        `);
+        return;
+    }
+
+    // Validate the issuer
+    if (!validateIssuer(issuer)) {
+        res.send(`
+            <html>
+                <head>
+                    <title>Badge Generation Error</title>
+                    <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
+                    <link rel="stylesheet" type="text/css" href="/css/font-awesome.min.css">
+                    <link rel="stylesheet" type="text/css" href="/css/animate.css">
+                    <link rel="stylesheet" type="text/css" href="/css/hamburgers.min.css">
+                    <link rel="stylesheet" type="text/css" href="/css/animsition.min.css">
+                    <link rel="stylesheet" type="text/css" href="/css/select2.min.css">
+                    <link rel="stylesheet" type="text/css" href="/css/daterangepicker.css">
+                    <link rel="stylesheet" type="text/css" href="/css/util.css">
+                    <link rel="stylesheet" type="text/css" href="/css/main.css">
+                </head>
+                <body>
+                    <h1>Badge Generation Error</h1>
+                    <p style="color: red;">Invalid Issuer</p>
                     <p><a href="/">Go back</a></p>
                 </body>
             </html>
@@ -113,6 +148,9 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
         return;
     }
 
+    // Generate the hidden field value using the selected issuer
+    const hiddenFieldValue = `${issuer}-${Date.now()}`;
+
     // Create the badgeDetails object
     const badgeDetails: Badge = {
         name: `${firstName} ${lastName}`, // Add the name property
@@ -120,7 +158,7 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
         lastName,
         email,
         studentId,
-        hiddenField,
+        hiddenField: hiddenFieldValue,
         issuer,
         uniqueKey: keyCode,
         keyDescription: keyCodeCatalog[keyCode] || keyCode
@@ -144,21 +182,18 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
                 </head>
                 <body>
                     <div class="container-contact100">
-		            <div class="wrap-contact100">
-                     <span class="contact100-form-title">
-					        Here is your badge:
-				    </span>
-              
-                    <img src="${badgeUrl}" alt="Generated Badge">
-                    <ul>
-                        <li><a href="http://${SERVER_IP}:${PORT}/share-badge">Share Badge on LinkedIn</a></li>
-                    </ul>
-                    <p><a href="/">Go back</a></p>
-
+                        <div class="wrap-contact100">
+                            <span class="contact100-form-title">
+                                Here is your badge:
+                            </span>
+                            <img src="${badgeUrl}" alt="Generated Badge">
+                            <ul>
+                                <li><a href="http://${SERVER_IP}:${PORT}/share-badge">Share Badge on LinkedIn</a></li>
+                            </ul>
+                            <p><a href="/">Go back</a></p>
+                        </div>
+                    </div>
                 </body>
-
-
-              
             </html>
         `); // Sending the URL of the generated badge as the response
     } catch (error) {
@@ -169,41 +204,42 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
 
 // Route for the root URL
 app.get('/', (req: Request, res: Response) => {
-    const hiddenFieldValue = `KMMX-${Date.now()}`; // Generate the hidden field value
-
     // Generate the list of key codes
     const keyCodeOptions = Object.keys(keyCodeCatalog).map(keyCode => `<option value="${keyCode}">${keyCode}</option>`).join('');
+    // Generate the list of issuers
+    const issuerOptions = Object.keys(issuerCatalog).map(issuer => `<option value="${issuer}">${issuer}</option>`).join('');
 
     res.send(`
        <!DOCTYPE html>
         <html lang="en">
             <head>
-                <title>Welcome To the Digital Badge Creator</title>
+                <title>Welcome To the Digital Badge Service</title>
                 <meta charset="UTF-8">
-	            <meta name="viewport" content="width=device-width, initial-scale=1">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
                 <!--===============================================================================================-->
-	            <link rel="icon" type="image/png" href="images/icons/favicon.ico">
+                <link rel="icon" type="image/png" href="/images/icons/favicon.ico">
                 <!--===============================================================================================-->
-	            <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
+                <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
                 <!--===============================================================================================-->
-	            <link rel="stylesheet" type="text/css" href="/css/font-awesome.min.css">
+                <link rel="stylesheet" type="text/css" href="/css/font-awesome.min.css">
                 <!--===============================================================================================-->
-	            <link rel="stylesheet" type="text/css" href="/css/animate.css">
+                <link rel="stylesheet" type="text/css" href="/css/animate.css">
                 <!--===============================================================================================-->
-	            <link rel="stylesheet" type="text/css" href="/css/hamburgers.min.css">
+                <link rel="stylesheet" type="text/css" href="/css/hamburgers.min.css">
                 <!--===============================================================================================-->
-	            <link rel="stylesheet" type="text/css" href="/css/animsition.min.css">
+                <link rel="stylesheet" type="text/css" href="/css/animsition.min.css">
                 <!--===============================================================================================-->
-	            <link rel="stylesheet" type="text/css" href="/css/select2.min.css">
+                <link rel="stylesheet" type="text/css" href="/css/select2.min.css">
                 <!--===============================================================================================-->
-	            <link rel="stylesheet" type="text/css" href="/css/daterangepicker.css">
+                <link rel="stylesheet" type="text/css" href="/css/daterangepicker.css">
                 <!--===============================================================================================-->
-	            <link rel="stylesheet" type="text/css" href="/css/util.css">
-	            <link rel="stylesheet" type="text/css" href="/css/main.css">
+                <link rel="stylesheet" type="text/css" href="/css/util.css">
+                <link rel="stylesheet" type="text/css" href="/css/main.css">
                 <!--===============================================================================================-->
                 <meta name="robots" content="noindex, follow">
                 <script>
                     const keyCodeCatalog = ${JSON.stringify(keyCodeCatalog)};
+                    const issuerCatalog = ${JSON.stringify(issuerCatalog)};
                     function confirmSubmission(event) {
                         const keyCode = document.getElementById('keyCode').value;
                         const keyDescription = keyCodeCatalog[keyCode] || keyCode;
@@ -216,78 +252,85 @@ app.get('/', (req: Request, res: Response) => {
             </head>
     <body>
         <div class="container-contact100">
-		<div class="wrap-contact100">
+        <div class="wrap-contact100">
         <form class="contact100-form validate-form" id="badgeForm" action="/generate-badge" method="post" onsubmit="confirmSubmission(event)">
                 <span class="contact100-form-title">
-					Welcome to the Badge Generation Service
-				</span>
+                    Welcome to the Badge Generation Service
+                </span>
                 <p> Recognize accomplishments with 100% verifiable digital badges </p>
                 <div class="wrap-input100 validate-input" data-validate=" First Name is required">
                     <span class="label-input100">First Name</span>
-                    <input class="input100" type="text" name="name" placeholder="Enter First name">
+                    <input class="input100" type="text" name="firstName" placeholder="Enter First name">
                     <span class="focus-input100"></span>
                 </div>
                 <div class="wrap-input100 validate-input" data-validate=" Last Name is required">
                     <span class="label-input100">Last Name</span>
-                    <input class="input100" type="text" name="name" placeholder="Enter Last name">
+                    <input class="input100" type="text" name="lastName" placeholder="Enter Last name">
                     <span class="focus-input100"></span>
                 </div>
                 <div class="wrap-input100 validate-input" data-validate = "Valid email is required: ex@abc.xyz">
-					<span class="label-input100">Email</span>
-					<input class="input100" type="text" name="email" placeholder="Enter your email addess">
-					<span class="focus-input100"></span>
-				</div>
+                    <span class="label-input100">Email</span>
+                    <input class="input100" type="text" name="email" placeholder="Enter your email address">
+                    <span class="focus-input100"></span>
+                </div>
+                <div class="wrap-input100 validate-input" data-validate = "Issuer is required">
+                    <span class="label-input100">Issuer</span>
+                    <select class="selection-2" id="issuer" name="issuer" required>
+                        ${issuerOptions}
+                    </select>
+                    <span class="focus-input100"></span>
+                </div>
                 <div class="wrap-input100 validate-input" data-validate = "Key Code is required">
-					<span class="label-input100">Key Code</span>
-                    <select class="input100" id="keyCode" name="keyCode" required>
+                    <span class="label-input100">Key Code</span>
+                    <select class="selection-2" id="keyCode" name="keyCode" required>
                         ${keyCodeOptions}
                     </select>
-					<span class="focus-input100"></span>
-				</div>
-                 <div class="wrap-input100 validate-input" data-validate = "Particpant Id is requiered">
-					<span class="label-input100">Student Id:l</span>
-					<input class="input100" type="number" name="studentId" min="100" max="151" placeholder="Enter your email addess">
-					<span class="focus-input100"></span>
-				</div>
-                    <input type="hidden" id="hiddenField" name="hiddenField" value="${hiddenFieldValue}"><br>
-				<div class="container-contact100-form-btn">
-					<div class="wrap-contact100-form-btn">
-						<div class="contact100-form-bgbtn"></div>
-						<button class="contact100-form-btn">
-							<span>
-								Submit
-								<i class="fa fa-long-arrow-right m-l-7" aria-hidden="true"></i>
-							</span>
-						</button>
-					</div>
-				</div>
-			</form>
-		</div>
-	</div>
-	<div id="dropDownSelect1"></div>
+                    <span class="focus-input100"></span>
+                </div>
+                 <div class="wrap-input100 validate-input" data-validate = "Participant Id is required">
+                    <span class="label-input100">Student Id:</span>
+                    <input class="input100" type="number" name="studentId" min="100" max="151" placeholder="Enter your student ID">
+                    <span class="focus-input100"></span>
+                </div>
+                    <input type="hidden" id="hiddenField" name="hiddenField" value=""><br>
+                <div class="container-contact100-form-btn">
+                    <div class="wrap-contact100-form-btn">
+                        <div class="contact100-form-bgbtn"></div>
+                        <button class="contact100-form-btn">
+                            <span>
+                                Submit
+                                <i class="fa fa-long-arrow-right m-l-7" aria-hidden="true"></i>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="dropDownSelect1"></div>
 
             <!--===============================================================================================-->
-	<script src="/scripts/jquery/jquery-3.2.1.min.js"></script>
+    <script src="/scripts/jquery-3.2.1.min.js"></script>
             <!--===============================================================================================-->
-	<script src="/scripts/animsition.min.js"></script>
+    <script src="/scripts/animsition.min.js"></script>
             <!--===============================================================================================-->
-	<script src="/scripts/popper.js"></script>
-	<script src="/scripts/bootstrap.min.js"></script>
+    <script src="/scripts/popper.js"></script>
+    <script src="/scripts/bootstrap.min.js"></script>
             <!--===============================================================================================-->
-	<script src="/scripts/select2.min.js"></script>
-	        <script>
-		        $(".selection-2").select2({
-			        minimumResultsForSearch: 20,
-			        dropdownParent: $('#dropDownSelect1')
-		        });
-	        </script>
+    <script src="/scripts/select2.min.js"></script>
+            <script>
+                $(".selection-2").select2({
+                    minimumResultsForSearch: 20,
+                    dropdownParent: $('#dropDownSelect1')
+                });
+            </script>
             <!--===============================================================================================-->
-	        <script src="/scripts/moment.min.js"></script>
-	        <script src="/scripts/daterangepicker.js"></script>
+            <script src="/scripts/moment.min.js"></script>
+            <script src="/scripts/daterangepicker.js"></script>
             <!--===============================================================================================-->
-	        <script src="/scripts/countdowntime.js"></script>
+            <script src="/scripts/countdowntime.js"></script>
             <!--===============================================================================================-->
-	        <script src="/scripts/main.js"></script>
+            <script src="/scripts/main.js"></script>
 
         </body>
     </html>

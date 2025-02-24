@@ -19,10 +19,10 @@
   
     /*==================================================================
     [ Validate ]*/
-    var name = $('.validate-input input[name="name"]');
+    var name = $('.validate-input input[name="firstname"]');
     var email = $('.validate-input input[name="email"]');
-    var message = $('.validate-input textarea[name="message"]');
-
+    var message = $('.validate-input textarea[name="lastname"]');
+    
 
     $('.validate-form').on('submit',function(){
         var check = true;
