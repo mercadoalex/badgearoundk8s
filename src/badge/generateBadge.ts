@@ -29,6 +29,23 @@ async function getDbCredentials() {
     }
 }
 
+async function connectWithRetry(client: Client, retries = 5, delay = 2000): Promise<void> {
+    for (let i = 0; i < retries; i++) {
+        try {
+            await client.connect();
+            console.log('Connected to PostgreSQL database successfully');
+            return;
+        } catch (error) {
+            if (i < retries - 1) {
+                console.log(`Retrying database connection (${i + 1}/${retries})...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            } else {
+                throw error;
+            }
+        }
+    }
+}
+
 export async function generateBadge(badgeDetails: Badge): Promise<string> {
     const { firstName, lastName, uniqueKey, email, studentId, hiddenField, issuer } = badgeDetails;
 
@@ -78,7 +95,7 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         // Draw the text above the base image
         context.font = '12px Arial, OpenSans'; // Use Arial with fallback to OpenSans
         wrapText(context, 'Successfully completed the training:', 10, 50, width - 20, 15);
-        wrapText(context, keyCodeCatalog[ uniqueKey] ||  uniqueKey, 10, 65, width - 20, 15);
+        wrapText(context, keyCodeCatalog[uniqueKey] || uniqueKey, 10, 65, width - 20, 15);
 
         // Draw the base image on the canvas
         context.drawImage(baseImage, 0, 80, width, baseImage.height);
@@ -91,13 +108,13 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
 
         // Save the badge as a PNG file
         const buffer = canvas.toBuffer('image/png');
-        const filePath = path.join(outputDir, `${ uniqueKey}.png`);
+        const filePath = path.join(outputDir, `${uniqueKey}.png`);
         fs.writeFileSync(filePath, buffer);
 
         // Upload the badge to S3
         const uploadParams = {
             Bucket: 'digital-badge-bucket',
-            Key: `${ uniqueKey}.png`,
+            Key: `${uniqueKey}.png`,
             Body: buffer,
             ContentType: 'image/png'
         };
@@ -105,7 +122,7 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         await s3.send(new PutObjectCommand(uploadParams));
         console.log('Badge uploaded to S3 successfully');
 
-        const badgeUrl = `https://digital-badge-bucket.s3.amazonaws.com/${ uniqueKey}.png`;
+        const badgeUrl = `https://digital-badge-bucket.s3.amazonaws.com/${uniqueKey}.png`;
 
         // Insert the badge details into the PostgreSQL database
         console.log('Fetching database credentials');
@@ -119,13 +136,12 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
             port: dbCredentials.port,
         });
         console.log('Connecting to PostgreSQL database');
-        await client.connect();
-        console.log('Connected to PostgreSQL database successfully');
+        await connectWithRetry(client);
         const insertQuery = `
             INSERT INTO badges (first_name, last_name, issuer, key_code, key_description, badge_url, student_id, hidden_field, email)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         `;
-        const values = [firstName, lastName, issuer,  uniqueKey, keyCodeCatalog[ uniqueKey] ||  uniqueKey, badgeUrl, studentId, hiddenField, email];
+        const values = [firstName, lastName, issuer, uniqueKey, keyCodeCatalog[uniqueKey] || uniqueKey, badgeUrl, studentId, hiddenField, email];
         await client.query(insertQuery, values);
         console.log('Badge details inserted into PostgreSQL database successfully');
         await client.end();
