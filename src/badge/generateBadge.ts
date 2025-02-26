@@ -54,6 +54,26 @@ async function connectWithRetry(dbCredentials: any, retries = 5, delay = 2000): 
     throw new Error('Failed to connect to PostgreSQL database after multiple attempts');
 }
 
+async function ensureBadgesTableExists(client: Client) {
+    const createTableQuery = `
+        CREATE TABLE IF NOT EXISTS badges (
+            id SERIAL PRIMARY KEY,
+            first_name VARCHAR(255) NOT NULL,
+            last_name VARCHAR(255) NOT NULL,
+            issuer VARCHAR(255) NOT NULL,
+            key_code VARCHAR(255) NOT NULL,
+            key_description TEXT NOT NULL,
+            badge_url TEXT NOT NULL,
+            student_id INT NOT NULL,
+            hidden_field VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `;
+    await client.query(createTableQuery);
+    console.log('Ensured badges table exists');
+}
+
 export async function generateBadge(badgeDetails: Badge): Promise<string> {
     const { firstName, lastName, uniqueKey, email, studentId, hiddenField, issuer } = badgeDetails;
 
@@ -142,6 +162,10 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         console.log('Database credentials fetched successfully');
         console.log('Connecting to PostgreSQL database');
         const client = await connectWithRetry(dbCredentials);
+
+        // Ensure the badges table exists
+        await ensureBadgesTableExists(client);
+
         const insertQuery = `
             INSERT INTO badges (first_name, last_name, issuer, key_code, key_description, badge_url, student_id, hidden_field, email)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
