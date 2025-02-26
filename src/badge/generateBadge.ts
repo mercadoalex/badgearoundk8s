@@ -70,16 +70,23 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         console.log('Loading base image');
         // Load the base image
         const baseImage = await loadImage(path.join(__dirname, '../../assets/badge.png'));
-        context.drawImage(baseImage, 0, 0, width, 200); // Draw the base image at the top
+
+        // Calculate the aspect ratio of the base image
+        const aspectRatio = baseImage.width / baseImage.height;
+        const imageWidth = width;
+        const imageHeight = width / aspectRatio;
+
+        // Draw the base image on the canvas
+        context.drawImage(baseImage, 0, 0, imageWidth, imageHeight); // Draw the base image with calculated dimensions
 
         // Personalize the badge
         context.fillStyle = '#333';
         context.font = 'bold 24px Arial';
-        context.fillText(`${firstName} ${lastName}`, 50, 250); // Draw the name below the image
+        context.fillText(`${firstName} ${lastName}`, 50, imageHeight + 50); // Draw the name below the image
 
         context.font = '18px Arial';
-        context.fillText(`Issued by: ${issuer}`, 50, 300); // Draw the issuer below the name
-        context.fillText(`Key: ${uniqueKey}`, 50, 350); // Draw the unique key below the issuer
+        context.fillText(`Issued by: ${issuer}`, 50, imageHeight + 100); // Draw the issuer below the name
+        context.fillText(`Key: ${uniqueKey}`, 50, imageHeight + 150); // Draw the unique key below the issuer
 
         // Function to split text into multiple lines based on the width of the canvas
         function wrapText(context: CanvasContext, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
@@ -104,9 +111,6 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         context.font = '12px Arial, OpenSans'; // Use Arial with fallback to OpenSans
         wrapText(context, 'Successfully completed the training:', 10, 50, width - 20, 15);
         wrapText(context, keyCodeCatalog[uniqueKey] || uniqueKey, 10, 65, width - 20, 15);
-
-        // Draw the base image on the canvas
-        context.drawImage(baseImage, 0, 80, width, baseImage.height);
 
         // Ensure the output directory exists
         const outputDir = path.join(__dirname, '../../output');

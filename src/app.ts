@@ -202,6 +202,38 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
     }
 });
 
+// Route for sharing the badge on LinkedIn
+app.get('/share-badge', (req: Request, res: Response) => {
+    res.send(`
+        <html>
+            <head>
+                <title>Share Badge on LinkedIn</title>
+                <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
+                <link rel="stylesheet" type="text/css" href="/css/font-awesome.min.css">
+                <link rel="stylesheet" type="text/css" href="/css/animate.css">
+                <link rel="stylesheet" type="text/css" href="/css/hamburgers.min.css">
+                <link rel="stylesheet" type="text/css" href="/css/animsition.min.css">
+                <link rel="stylesheet" type="text/css" href="/css/select2.min.css">
+                <link rel="stylesheet" type="text/css" href="/css/daterangepicker.css">
+                <link rel="stylesheet" type="text/css" href="/css/util.css">
+                <link rel="stylesheet" type="text/css" href="/css/main.css">
+            </head>
+            <body>
+                <div class="container-contact100">
+                    <div class="wrap-contact100">
+                        <span class="contact100-form-title">
+                            Share your badge on LinkedIn
+                        </span>
+                        <p>Click the button below to share your badge on LinkedIn:</p>
+                        <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`http://${SERVER_IP}:${PORT}/badge-url`)}" target="_blank" class="btn btn-primary">Share on LinkedIn</a>
+                        <p><a href="/">Go back</a></p>
+                    </div>
+                </div>
+            </body>
+        </html>
+    `);
+});
+
 // Route for the root URL
 app.get('/', (req: Request, res: Response) => {
     // Generate the list of key codes
