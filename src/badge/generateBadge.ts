@@ -29,12 +29,19 @@ async function getDbCredentials() {
     }
 }
 
-async function connectWithRetry(client: Client, retries = 5, delay = 2000): Promise<void> {
+async function connectWithRetry(dbCredentials: any, retries = 5, delay = 2000): Promise<Client> {
     for (let i = 0; i < retries; i++) {
+        const client = new Client({
+            user: dbCredentials.username,
+            host: dbCredentials.host,
+            database: 'badge_db',
+            password: dbCredentials.password,
+            port: dbCredentials.port,
+        });
         try {
             await client.connect();
             console.log('Connected to PostgreSQL database successfully');
-            return;
+            return client;
         } catch (error) {
             if (i < retries - 1) {
                 console.log(`Retrying database connection (${i + 1}/${retries})...`);
@@ -44,6 +51,7 @@ async function connectWithRetry(client: Client, retries = 5, delay = 2000): Prom
             }
         }
     }
+    throw new Error('Failed to connect to PostgreSQL database after multiple attempts');
 }
 
 export async function generateBadge(badgeDetails: Badge): Promise<string> {
@@ -128,15 +136,8 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         console.log('Fetching database credentials');
         const dbCredentials = await getDbCredentials();
         console.log('Database credentials fetched successfully');
-        const client = new Client({
-            user: dbCredentials.username,
-            host: dbCredentials.host,
-            database: 'badge_db',
-            password: dbCredentials.password,
-            port: dbCredentials.port,
-        });
         console.log('Connecting to PostgreSQL database');
-        await connectWithRetry(client);
+        const client = await connectWithRetry(dbCredentials);
         const insertQuery = `
             INSERT INTO badges (first_name, last_name, issuer, key_code, key_description, badge_url, student_id, hidden_field, email)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -144,6 +145,8 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         const values = [firstName, lastName, issuer, uniqueKey, keyCodeCatalog[uniqueKey] || uniqueKey, badgeUrl, studentId, hiddenField, email];
         await client.query(insertQuery, values);
         console.log('Badge details inserted into PostgreSQL database successfully');
+
+        // Close the database connection
         await client.end();
 
         return badgeUrl;
