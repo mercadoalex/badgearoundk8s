@@ -2,13 +2,17 @@
 export const integrateLinkedIn = async (badgeId: string, accessToken: string) => {
     const linkedInApiUrl = 'https://api.linkedin.com/v2/shares'; // LinkedIn API endpoint for sharing content
 
+    // Construct the URLs for the badge and the badge image
+    const badgeUrl = `https://digital-badge-bucket.s3.amazonaws.com/${badgeId}.pdf`; // URL of the badge PDF
+    const badgeImageUrl = `https://digital-badge-bucket.s3.amazonaws.com/${badgeId}.png`; // URL of the badge image
+
     // Data to be sent to LinkedIn API
     const badgeData = {
         content: {
             title: 'Digital Badge Earned', // Title of the shared content
             description: `I have completed the training and earned a badge with ID: ${badgeId}`, // Description of the shared content
-            submittedUrl: `https://yourbadgeurl.com/badge/${badgeId}`, // URL of the badge
-            submittedImageUrl: `https://yourbadgeurl.com/images/${badgeId}.png` // URL of the badge image
+            submittedUrl: badgeUrl, // URL of the badge
+            submittedImageUrl: badgeImageUrl // URL of the badge image
         },
         owner: 'urn:li:person:YOUR_LINKEDIN_ID', // LinkedIn ID of the user sharing the content
         visibility: {

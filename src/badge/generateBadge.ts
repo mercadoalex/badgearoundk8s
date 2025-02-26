@@ -81,8 +81,8 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         throw new Error('Missing required badge details');
     }
 
-    const width = 600;
-    const height = 400; // Increased height to accommodate additional text
+    const width = 300; // Reduced width by half
+    const height = 200; // Reduced height by half
     const canvas = createCanvas(width, height);
     const context = canvas.getContext('2d') as CanvasContext;
 
@@ -101,12 +101,12 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
 
         // Personalize the badge
         context.fillStyle = '#333';
-        context.font = 'bold 24px Arial';
-        context.fillText(`${firstName} ${lastName}`, 50, imageHeight + 50); // Draw the name below the image
+        context.font = 'bold 12px Arial'; // Reduced font size by half
+        context.fillText(`${firstName} ${lastName}`, 25, imageHeight + 25); // Draw the name below the image
 
-        context.font = '18px Arial';
-        context.fillText(`Issued by: ${issuer}`, 50, imageHeight + 100); // Draw the issuer below the name
-        context.fillText(`Key: ${uniqueKey}`, 50, imageHeight + 150); // Draw the unique key below the issuer
+        context.font = '9px Arial'; // Reduced font size by half
+        context.fillText(`Issued by: ${issuer}`, 25, imageHeight + 50); // Draw the issuer below the name
+        context.fillText(`Key: ${uniqueKey}`, 25, imageHeight + 75); // Draw the unique key below the issuer
 
         // Function to split text into multiple lines based on the width of the canvas
         function wrapText(context: CanvasContext, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
@@ -128,9 +128,10 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         }
 
         // Draw the text above the base image
-        context.font = '12px Arial, OpenSans'; // Use Arial with fallback to OpenSans
-        wrapText(context, 'Successfully completed the training:', 10, 50, width - 20, 15);
-        wrapText(context, keyCodeCatalog[uniqueKey] || uniqueKey, 10, 65, width - 20, 15);
+        context.font = '6px Arial, OpenSans'; // Reduced font size by half
+        wrapText(context, `${firstName} ${lastName}`, 5, 15, width - 10, 7.5); // Add first name and last name
+        wrapText(context, 'Successfully completed the training:', 5, 25, width - 10, 7.5);
+        wrapText(context, keyCodeCatalog[uniqueKey] || uniqueKey, 5, 32.5, width - 10, 7.5);
 
         // Ensure the output directory exists
         const outputDir = path.join(__dirname, '../../output');

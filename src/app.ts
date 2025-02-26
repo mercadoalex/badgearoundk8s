@@ -189,6 +189,7 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
                             <img src="${badgeUrl}" alt="Generated Badge">
                             <ul>
                                 <li><a href="http://${SERVER_IP}:${PORT}/share-badge">Share Badge on LinkedIn</a></li>
+                                <li><a href="${badgeUrl}" download>Download Badge</a></li>
                             </ul>
                             <p><a href="/">Go back</a></p>
                         </div>
