@@ -5,6 +5,7 @@ import path from 'path';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Client } from 'pg';
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+import PDFDocument from 'pdfkit';
 
 // Load the KeyCode Catalog
 const keyCodeCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, '../../assets/keyCodeCatalog.json'), 'utf-8'));
@@ -67,14 +68,15 @@ async function ensureBadgesTableExists(client: Client) {
             student_id INT NOT NULL,
             hidden_field VARCHAR(255) NOT NULL,
             email VARCHAR(255) NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            issued BOOLEAN DEFAULT FALSE
         )
     `;
     await client.query(createTableQuery);
     console.log('Ensured badges table exists');
 }
 
-export async function generateBadge(badgeDetails: Badge): Promise<string> {
+export async function generateBadge(badgeDetails: Badge): Promise<{ badgeUrl: string, badgePngUrl: string }> {
     const { firstName, lastName, uniqueKey, email, studentId, hiddenField, issuer } = badgeDetails;
 
     if (!firstName || !lastName || !studentId || !hiddenField || !email || !issuer) {
@@ -87,6 +89,23 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
     const context = canvas.getContext('2d') as CanvasContext;
 
     try {
+        console.log('Fetching database credentials');
+        const dbCredentials = await getDbCredentials();
+        console.log('Database credentials fetched successfully');
+        console.log('Connecting to PostgreSQL database');
+        const client = await connectWithRetry(dbCredentials);
+
+        // Ensure the badges table exists
+        await ensureBadgesTableExists(client);
+
+        // Pre-validation: Check if a badge has already been issued for the given studentId
+        const checkQuery = 'SELECT issued FROM badges WHERE student_id = $1';
+        const checkResult = await client.query(checkQuery, [studentId]);
+        if (checkResult.rows.length > 0 && checkResult.rows[0].issued) {
+            await client.end();
+            throw new Error(`Badge for StudentID ${studentId} was already issued`);
+        }
+
         console.log('Loading base image');
         // Load the base image
         const baseImage = await loadImage(path.join(__dirname, '../../assets/badge.png'));
@@ -101,7 +120,7 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
 
         // Personalize the badge
         context.fillStyle = '#333';
-        context.font = 'bold 12px Arial'; // Reduced font size by half
+        context.font = 'bold 14px Arial'; // Reduced font size by half
         context.fillText(`${firstName} ${lastName}`, 25, imageHeight + 25); // Draw the name below the image
 
         context.font = '9px Arial'; // Reduced font size by half
@@ -133,6 +152,10 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         wrapText(context, 'Successfully completed the training:', 5, 25, width - 10, 7.5);
         wrapText(context, keyCodeCatalog[uniqueKey] || uniqueKey, 5, 32.5, width - 10, 7.5);
 
+        // Draw the hidden field below the base image
+        context.font = '6px Arial, OpenSans'; // Reduced font size by half
+        wrapText(context, `Hidden Field: ${hiddenField}`, 5, imageHeight + 90, width - 10, 7.5);
+
         // Ensure the output directory exists
         const outputDir = path.join(__dirname, '../../output');
         if (!fs.existsSync(outputDir)) {
@@ -144,41 +167,56 @@ export async function generateBadge(badgeDetails: Badge): Promise<string> {
         const filePath = path.join(outputDir, `${uniqueKey}.png`);
         fs.writeFileSync(filePath, buffer);
 
-        // Upload the badge to S3
-        const uploadParams = {
+        // Create a PDF document
+        const pdfDoc = new PDFDocument();
+        const pdfPath = path.join(outputDir, `${uniqueKey}.pdf`);
+        pdfDoc.pipe(fs.createWriteStream(pdfPath));
+
+        // Add the badge image to the PDF
+        pdfDoc.image(buffer, 0, 0, { width: pdfDoc.page.width, height: pdfDoc.page.height });
+
+        // Finalize the PDF and end the stream
+        pdfDoc.end();
+
+        // Upload the PNG to S3
+        const uploadPngParams = {
             Bucket: 'digital-badge-bucket',
             Key: `${uniqueKey}.png`,
-            Body: buffer,
+            Body: fs.readFileSync(filePath),
             ContentType: 'image/png'
         };
-        console.log('Uploading badge to S3');
-        await s3.send(new PutObjectCommand(uploadParams));
-        console.log('Badge uploaded to S3 successfully');
+        console.log('Uploading badge PNG to S3');
+        await s3.send(new PutObjectCommand(uploadPngParams));
+        console.log('Badge PNG uploaded to S3 successfully');
 
-        const badgeUrl = `https://digital-badge-bucket.s3.amazonaws.com/${uniqueKey}.png`;
+        const badgePngUrl = `https://digital-badge-bucket.s3.amazonaws.com/${uniqueKey}.png`;
+
+        // Upload the PDF to S3
+        const uploadPdfParams = {
+            Bucket: 'digital-badge-bucket',
+            Key: `${uniqueKey}.pdf`,
+            Body: fs.readFileSync(pdfPath),
+            ContentType: 'application/pdf'
+        };
+        console.log('Uploading badge PDF to S3');
+        await s3.send(new PutObjectCommand(uploadPdfParams));
+        console.log('Badge PDF uploaded to S3 successfully');
+
+        const badgeUrl = `https://digital-badge-bucket.s3.amazonaws.com/${uniqueKey}.pdf`;
 
         // Insert the badge details into the PostgreSQL database
-        console.log('Fetching database credentials');
-        const dbCredentials = await getDbCredentials();
-        console.log('Database credentials fetched successfully');
-        console.log('Connecting to PostgreSQL database');
-        const client = await connectWithRetry(dbCredentials);
-
-        // Ensure the badges table exists
-        await ensureBadgesTableExists(client);
-
         const insertQuery = `
-            INSERT INTO badges (first_name, last_name, issuer, key_code, key_description, badge_url, student_id, hidden_field, email)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            INSERT INTO badges (first_name, last_name, issuer, key_code, key_description, badge_url, student_id, hidden_field, email, issued)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         `;
-        const values = [firstName, lastName, issuer, uniqueKey, keyCodeCatalog[uniqueKey] || uniqueKey, badgeUrl, studentId, hiddenField, email];
+        const values = [firstName, lastName, issuer, uniqueKey, keyCodeCatalog[uniqueKey] || uniqueKey, badgeUrl, studentId, hiddenField, email, true];
         await client.query(insertQuery, values);
         console.log('Badge details inserted into PostgreSQL database successfully');
 
         // Close the database connection
         await client.end();
 
-        return badgeUrl;
+        return { badgeUrl, badgePngUrl };
     } catch (error) {
         console.error('Error generating badge:', error);
         throw error;

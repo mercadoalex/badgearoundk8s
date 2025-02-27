@@ -166,6 +166,8 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
 
     try {
         const badgeUrl = await generateBadge(badgeDetails); // Generating the badge using the generateBadge function
+        const badgePngUrl = badgeUrl.replace('.pdf', '.png'); // Assuming the PNG file has the same name as the PDF file
+
         res.send(`
             <html>
                 <head>
@@ -186,10 +188,11 @@ app.post('/generate-badge', async (req: Request, res: Response): Promise<void> =
                             <span class="contact100-form-title">
                                 Here is your badge:
                             </span>
-                            <img src="${badgeUrl}" alt="Generated Badge">
+                            <img src="${badgePngUrl}" alt="Generated Badge">
                             <ul>
                                 <li><a href="http://${SERVER_IP}:${PORT}/share-badge">Share Badge on LinkedIn</a></li>
-                                <li><a href="${badgeUrl}" download>Download Badge</a></li>
+                                <li><a href="${badgePngUrl}" download>Download Badge as PNG</a></li>
+                                <li><a href="${badgeUrl}" download>Download Badge as PDF</a></li>
                             </ul>
                             <p><a href="/">Go back</a></p>
                         </div>
