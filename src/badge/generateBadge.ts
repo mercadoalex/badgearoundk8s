@@ -222,3 +222,18 @@ export async function generateBadge(badgeDetails: Badge): Promise<{ badgeUrl: st
         throw error;
     }
 }
+
+async function testDbConnection() {
+    try {
+        const dbCredentials = await getDbCredentials();
+        const client = await connectWithRetry(dbCredentials);
+        const res = await client.query('SELECT NOW()');
+        console.log('Database connection test successful:', res.rows[0]);
+        await client.end();
+    } catch (error) {
+        console.error('Error testing database connection:', error);
+    }
+}
+
+// Call the test function
+testDbConnection();
