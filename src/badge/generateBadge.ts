@@ -13,8 +13,9 @@ const keyCodeCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, '../../as
 const s3 = new S3Client({ region: 'us-west-2' });
 const secretsManager = new SecretsManagerClient({ region: 'us-west-2' });
 
+// Fetch the database credentials and RDS endpoint from AWS Secrets Manager
 async function getDbCredentials() {
-    const secretName = "dev/postgresql";
+    const secretName = "rds_endpoint_secret";
     const command = new GetSecretValueCommand({ SecretId: secretName });
     console.log(`Fetching secret: ${secretName}`);
     try {
@@ -23,13 +24,21 @@ async function getDbCredentials() {
             throw new Error('SecretString is empty');
         }
         console.log('Secret fetched successfully');
-        return JSON.parse(response.SecretString);
+        const secret = JSON.parse(response.SecretString);
+        const dbCredentials = {
+            username: "your_db_username", // Replace with your actual DB username
+            password: "your_db_password", // Replace with your actual DB password
+            host: secret.rds_endpoint,
+            port: 5432 // Replace with your actual DB port if different
+        };
+        return dbCredentials;
     } catch (error) {
         console.error('Error fetching secret:', error);
         throw error;
     }
 }
 
+// Connect to the PostgreSQL database with retry logic
 async function connectWithRetry(dbCredentials: any, retries = 5, delay = 2000): Promise<Client> {
     for (let i = 0; i < retries; i++) {
         const client = new Client({
@@ -55,6 +64,7 @@ async function connectWithRetry(dbCredentials: any, retries = 5, delay = 2000): 
     throw new Error('Failed to connect to PostgreSQL database after multiple attempts');
 }
 
+// Ensure the badges table exists in the PostgreSQL database
 async function ensureBadgesTableExists(client: Client) {
     const createTableQuery = `
         CREATE TABLE IF NOT EXISTS badges (
@@ -76,6 +86,7 @@ async function ensureBadgesTableExists(client: Client) {
     console.log('Ensured badges table exists');
 }
 
+// Generate a badge and return the URLs of the badge
 export async function generateBadge(badgeDetails: Badge): Promise<{ badgeUrl: string, badgePngUrl: string }> {
     const { firstName, lastName, uniqueKey, email, studentId, hiddenField, issuer } = badgeDetails;
 
@@ -223,9 +234,12 @@ export async function generateBadge(badgeDetails: Badge): Promise<{ badgeUrl: st
     }
 }
 
+// Test the database connection
 async function testDbConnection() {
     try {
+        console.log('Starting database connection test');
         const dbCredentials = await getDbCredentials();
+        console.log('Database credentials:', dbCredentials);
         const client = await connectWithRetry(dbCredentials);
         const res = await client.query('SELECT NOW()');
         console.log('Database connection test successful:', res.rows[0]);
