@@ -1,25 +1,41 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Client } from 'pg';
 import fs from 'fs';
-import path from 'path';
 import { Badge } from '../types';
 import { generateBadgeFiles } from './badgeGenerator';
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 
+// Initialize the Secrets Manager client
 const secretsManager = new SecretsManagerClient({ region: 'us-west-2' });
 
-const keyCodeCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, '../../assets/keyCodeCatalog.json'), 'utf-8'));
-
+// Function to get database credentials from AWS Secrets Manager
 async function getDbCredentials() {
-  const secretName = "dev/postgresql";
-  const command = new GetSecretValueCommand({ SecretId: secretName });
-  const response = await secretsManager.send(command);
-  if (!response.SecretString) {
-    throw new Error('SecretString is empty');
+  const client = new SecretsManagerClient({ region: "us-west-2" });
+  let command = new GetSecretValueCommand({ SecretId: "rds_endpoint_secret" });
+
+  try {
+    const response: any = await client.send(command);
+    console.log('Fetched rds_endpoint_secret successfully');
+    const credentials = JSON.parse(response.SecretString);
+    if (!credentials.username || !credentials.host || !credentials.password || !credentials.port) {
+      throw new Error('Missing required database credentials');
+    }
+    return credentials;
+  } catch (error) {
+    console.error('Error fetching rds_endpoint_secret:', error);
+    console.log('Falling back to dev/postgresql secret');
+    command = new GetSecretValueCommand({ SecretId: "dev/postgresql" });
+    const response: any = await client.send(command);
+    console.log('Fetched dev/postgresql successfully');
+    const credentials = JSON.parse(response.SecretString);
+    if (!credentials.username || !credentials.host || !credentials.password || !credentials.port) {
+      throw new Error('Missing required database credentials');
+    }
+    return credentials;
   }
-  return JSON.parse(response.SecretString);
 }
 
+// Function to connect to the database with retry logic
 async function connectWithRetry(dbCredentials: any, retries = 5, delay = 2000): Promise<Client> {
   const client = new Client({
     user: dbCredentials.username,
@@ -32,6 +48,7 @@ async function connectWithRetry(dbCredentials: any, retries = 5, delay = 2000): 
   for (let i = 0; i < retries; i++) {
     try {
       await client.connect();
+      console.log('Database connection successful');
       return client;
     } catch (error) {
       console.error(`Database connection attempt ${i + 1} failed:`, error);
@@ -46,6 +63,7 @@ async function connectWithRetry(dbCredentials: any, retries = 5, delay = 2000): 
   throw new Error('Failed to connect to the database');
 }
 
+// Function to insert badge data into the database
 export async function insertBadgeData(badge: Badge) {
   const dbCredentials = await getDbCredentials();
   const client = await connectWithRetry(dbCredentials);
@@ -56,19 +74,20 @@ export async function insertBadgeData(badge: Badge) {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     `;
     const values = [
-      badge.firstName,
-      badge.lastName,
-      badge.issuer,
-      badge.keyCode,
-      badge.keyDescription,
-      badge.badgeUrl,
-      badge.studentId,
-      badge.hiddenField,
-      badge.email,
-      badge.issued,
+      badge.firstName ?? '',
+      badge.lastName ?? '',
+      badge.issuer ?? '',
+      badge.keyCode ?? '',
+      badge.keyDescription ?? '',
+      badge.badgeUrl ?? '',
+      badge.studentId ?? '',
+      badge.hiddenField ?? '',
+      badge.email ?? '',
+      badge.issued ?? false,
     ];
 
     await client.query(query, values);
+    console.log('Badge data inserted successfully');
   } catch (error) {
     console.error('Error inserting badge data:', error);
     throw error;
@@ -77,7 +96,7 @@ export async function insertBadgeData(badge: Badge) {
   }
 }
 
-// FUNCTION TO UPLOAD BADGE FILES TO S3
+// Function to upload badge files to S3
 export async function uploadBadgeFiles(badge: Badge) {
   const s3Client = new S3Client({ region: 'us-west-2' });
   const { pngFilePath, pdfFilePath } = await generateBadgeFiles(badge); // Await the Promise before destructuring
@@ -97,14 +116,15 @@ export async function uploadBadgeFiles(badge: Badge) {
 
     try {
       await s3Client.send(command);
+      console.log(`Uploaded ${file.key} to S3 successfully`);
     } catch (error) {
-      console.error('Error uploading badge file to S3:', error);
+      console.error(`Error uploading ${file.key} to S3:`, error);
       throw error;
     }
   }
 }
 
-// FUNCTION TO GENERATE A BADGE AND RETURN THE URLs OF THE BADGE
+// Function to generate a badge and return the URLs of the badge
 export async function generateBadge(badgeDetails: Badge): Promise<{ badgeUrl: string, badgePngUrl: string }> {
   const { firstName, lastName, keyCode, email, studentId, hiddenField, issuer } = badgeDetails;
 
@@ -116,9 +136,10 @@ export async function generateBadge(badgeDetails: Badge): Promise<{ badgeUrl: st
     // Generate badge files and upload them to S3
     await uploadBadgeFiles(badgeDetails);
 
-    const badgePngUrl = `https://digital-badge-bucket.s3.amazonaws.com/${uniqueKey}.png`;
-    const badgeUrl = `https://digital-badge-bucket.s3.amazonaws.com/${uniqueKey}.pdf`;
+    const badgePngUrl = `https://digital-badge-bucket.s3.amazonaws.com/${keyCode}.png`;
+    const badgeUrl = `https://digital-badge-bucket.s3.amazonaws.com/${keyCode}.pdf`;
 
+    console.log('Badge generated successfully');
     return { badgeUrl, badgePngUrl };
   } catch (error) {
     console.error('Error generating badge:', error);
@@ -126,7 +147,7 @@ export async function generateBadge(badgeDetails: Badge): Promise<{ badgeUrl: st
   }
 }
 
-// FUNCTION TO TEST THE DATABASE CONNECTION
+// Function to test the database connection
 async function testDbConnection() {
   try {
     console.log('Starting database connection test');
@@ -141,5 +162,5 @@ async function testDbConnection() {
   }
 }
 
-// CALL THE TEST FUNCTION
+// Call the test function
 testDbConnection();
