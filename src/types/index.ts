@@ -1,15 +1,16 @@
 //TypeScript interfaces that describe the shape of objects used in your application
 // Interface for Badge details
 export interface Badge {
-    name: string; // Name of the badge
-    issuer: string; // Issuer of the badge
-    uniqueKey: string; // Unique key for the badge
-    keyDescription: string;
     firstName: string; 
-    lastName: string;  
+    lastName: string;
+    issuer: string; // Issuer of the badge
+    keyCode: string;
+    keyDescription: string; 
+    badgeUrl: string; 
     studentId: string; 
     hiddenField: string; 
     email: string; 
+    issued:boolean;
 }
 
 // Interface for LinkedIn integration details
