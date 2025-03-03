@@ -1,6 +1,5 @@
 import express, { Request, Response } from 'express';
-import { generateBadge } from './badge/generateBadge';
-import { Badge } from './types';
+import { generateBadge } from './badge/databaseInsertionAndS3';
 import fs from 'fs';
 import path from 'path';
 

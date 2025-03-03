@@ -1,18 +1,15 @@
-import { createCanvas, loadImage, CanvasRenderingContext2D as CanvasContext } from 'canvas';
-import { Badge } from '../types';
-import fs from 'fs';
-import path from 'path';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Client } from 'pg';
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
-import PDFDocument from 'pdfkit';
+import { generateBadgeFiles } from './badgeGenerator';
+import { Badge } from '../types';
+import fs from 'fs';
+import path from 'path';
 
 // Load the KeyCode Catalog
 const keyCodeCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, '../../assets/keyCodeCatalog.json'), 'utf-8'));
-
 const s3 = new S3Client({ region: 'us-west-2' });
 const secretsManager = new SecretsManagerClient({ region: 'us-west-2' });
-
 // Fetch the database credentials and RDS endpoint from AWS Secrets Manager
 async function getDbCredentials() {
     const secretName = "rds_endpoint_secret";
@@ -94,11 +91,6 @@ export async function generateBadge(badgeDetails: Badge): Promise<{ badgeUrl: st
         throw new Error('Missing required badge details');
     }
 
-    const width = 300; // Reduced width by half
-    const height = 200; // Reduced height by half
-    const canvas = createCanvas(width, height);
-    const context = canvas.getContext('2d') as CanvasContext;
-
     try {
         console.log('Fetching database credentials');
         const dbCredentials = await getDbCredentials();
@@ -117,83 +109,14 @@ export async function generateBadge(badgeDetails: Badge): Promise<{ badgeUrl: st
             throw new Error(`Badge for StudentID ${studentId} was already issued`);
         }
 
-        console.log('Loading base image');
-        // Load the base image
-        const baseImage = await loadImage(path.join(__dirname, '../../assets/badge.png'));
-
-        // Calculate the aspect ratio of the base image
-        const aspectRatio = baseImage.width / baseImage.height;
-        const imageWidth = width;
-        const imageHeight = width / aspectRatio;
-
-        // Draw the base image on the canvas
-        context.drawImage(baseImage, 0, 0, imageWidth, imageHeight); // Draw the base image with calculated dimensions
-
-        // Personalize the badge
-        context.fillStyle = '#333';
-        context.font = 'bold 14px Arial'; // Reduced font size by half
-        context.fillText(`${firstName} ${lastName}`, 25, imageHeight + 25); // Draw the name below the image
-
-        context.font = '9px Arial'; // Reduced font size by half
-        context.fillText(`Issued by: ${issuer}`, 25, imageHeight + 50); // Draw the issuer below the name
-        context.fillText(`Key: ${uniqueKey}`, 25, imageHeight + 75); // Draw the unique key below the issuer
-
-        // Function to split text into multiple lines based on the width of the canvas
-        function wrapText(context: CanvasContext, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
-            const words = text.split(' ');
-            let line = '';
-            for (let n = 0; n < words.length; n++) {
-                const testLine = line + words[n] + ' ';
-                const metrics = context.measureText(testLine);
-                const testWidth = metrics.width;
-                if (testWidth > maxWidth && n > 0) {
-                    context.fillText(line, x, y);
-                    line = words[n] + ' ';
-                    y += lineHeight;
-                } else {
-                    line = testLine;
-                }
-            }
-            context.fillText(line, x, y);
-        }
-
-        // Draw the text above the base image
-        context.font = '6px Arial, OpenSans'; // Reduced font size by half
-        wrapText(context, `${firstName} ${lastName}`, 5, 15, width - 10, 7.5); // Add first name and last name
-        wrapText(context, 'Successfully completed the training:', 5, 25, width - 10, 7.5);
-        wrapText(context, keyCodeCatalog[uniqueKey] || uniqueKey, 5, 32.5, width - 10, 7.5);
-
-        // Draw the hidden field below the base image
-        context.font = '6px Arial, OpenSans'; // Reduced font size by half
-        wrapText(context, `Hidden Field: ${hiddenField}`, 5, imageHeight + 90, width - 10, 7.5);
-
-        // Ensure the output directory exists
-        const outputDir = path.join(__dirname, '../../output');
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir, { recursive: true });
-        }
-
-        // Save the badge as a PNG file
-        const buffer = canvas.toBuffer('image/png');
-        const filePath = path.join(outputDir, `${uniqueKey}.png`);
-        fs.writeFileSync(filePath, buffer);
-
-        // Create a PDF document
-        const pdfDoc = new PDFDocument();
-        const pdfPath = path.join(outputDir, `${uniqueKey}.pdf`);
-        pdfDoc.pipe(fs.createWriteStream(pdfPath));
-
-        // Add the badge image to the PDF
-        pdfDoc.image(buffer, 0, 0, { width: pdfDoc.page.width, height: pdfDoc.page.height });
-
-        // Finalize the PDF and end the stream
-        pdfDoc.end();
+        // Generate badge files
+        const { pngFilePath, pdfFilePath } = await generateBadgeFiles(badgeDetails);
 
         // Upload the PNG to S3
         const uploadPngParams = {
             Bucket: 'digital-badge-bucket',
             Key: `${uniqueKey}.png`,
-            Body: fs.readFileSync(filePath),
+            Body: fs.readFileSync(pngFilePath),
             ContentType: 'image/png'
         };
         console.log('Uploading badge PNG to S3');
@@ -206,7 +129,7 @@ export async function generateBadge(badgeDetails: Badge): Promise<{ badgeUrl: st
         const uploadPdfParams = {
             Bucket: 'digital-badge-bucket',
             Key: `${uniqueKey}.pdf`,
-            Body: fs.readFileSync(pdfPath),
+            Body: fs.readFileSync(pdfFilePath),
             ContentType: 'application/pdf'
         };
         console.log('Uploading badge PDF to S3');
