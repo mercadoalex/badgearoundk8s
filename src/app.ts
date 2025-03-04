@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express';
-import { generateBadge } from './badge/databaseInsertionAndS3';
+import { generateBadgeFiles } from './badge/badgeGenerator';
+import { insertBadgeData } from './badge/databaseInsertion';
+import { uploadBadgeFiles } from './badge/s3Storage';
 import fs from 'fs';
 import path from 'path';
 
@@ -8,8 +10,8 @@ const keyCodeCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, '../asset
 // Load the Issuer Catalog
 const issuerCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, '../assets/issuerCatalog.json'), 'utf-8'));
 
-/* The code imports the express module for creating the server and two functions, 
-generateBadge and integrateLinkedIn, from other modules. */
+/* The code imports the express module for creating the server and functions for generating badge files, 
+inserting badge data into the database, and uploading badge files to S3 from other modules. */
 
 // Creating an instance of an Express application
 const app = express();
@@ -43,7 +45,32 @@ function validateEmail(email: string): boolean {
 app.post('/generate-badge', async (req: Request, res: Response): Promise<void> => {
     try {
         const badgeDetails = req.body;
-        const { badgeUrl, badgePngUrl } = await generateBadge(badgeDetails);
+
+        // Validate the badge details
+        if (!validateEmail(badgeDetails.email)) {
+            res.status(400).send('Invalid email format');
+            return;
+        }
+        if (!validateKeyCode(badgeDetails.keyCode)) {
+            res.status(400).send('Invalid key code');
+            return;
+        }
+        if (!validateIssuer(badgeDetails.issuer)) {
+            res.status(400).send('Invalid issuer');
+            return;
+        }
+
+        // Generate badge files
+        const { pngFilePath, pdfFilePath } = await generateBadgeFiles(badgeDetails);
+
+        // Upload badge files to S3
+        await uploadBadgeFiles(badgeDetails, pngFilePath, pdfFilePath);
+
+        // Insert badge data into the database
+        await insertBadgeData(badgeDetails);
+
+        const badgePngUrl = `https://digital-badge-bucket.s3.amazonaws.com/${badgeDetails.keyCode}.png`;
+        const badgeUrl = `https://digital-badge-bucket.s3.amazonaws.com/${badgeDetails.keyCode}.pdf`;
 
         res.send(`
             <html>
